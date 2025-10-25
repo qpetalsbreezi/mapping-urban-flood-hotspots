@@ -1,0 +1,16 @@
+Date,USGS_Water_Level_ft,NOAA_Event_ID,NOAA_Description,Impact_Summary,Satellite_Coverage
+2010-09-30,11.20,262825,Crabtree Creek flooding - crested at 12.69 feet,Minor flooding of Crabtree Creek,❌ No Sentinel (too early)
+2011-08-06,12.17,339503,Flood waters infiltrated businesses and residences,8 people displaced, 45-50 people evacuated from Milner Hotel,❌ No Sentinel (too early)
+2011-09-21,10.95,347398,Multiple roads blocked across Raleigh,$5000 damage, Blue Ridge Road, Hillsboro Street, Avent Ferry Road flooded,❌ No Sentinel (too early)
+2013-09-01,12.54,477570,Crabtree Valley Mall parking deck flooded,$10000 damage, Multiple roads flooded, cars stranded,❌ No Sentinel (too early)
+2014-08-12,12.37,541092,Multiple businesses evacuated from Capital Boulevard,$2500000 damage, 71 people rescued and evacuated,⚠️ Limited Sentinel-1 (just launched)
+2016-07-16,14.41,653659,Flash flooding at numerous locations in Raleigh and Cary,$250000 damage, Water rescues at multiple locations,✅ Full Sentinel-1/2
+2016-07-17,15.24,653729,Heavy rain caused flooding along Crabtree Creek,Crabtree Creek remained over flood stage for 10+ hours,✅ Full Sentinel-1/2
+2017-04-25,16.57,696352,Lumley road closed due to flash flooding,$10000 damage, Between I-540 and Brier Creek Parkway,✅ Full Sentinel-1/2
+2018-05-21,12.37,755610,Several roads closed near Crabtree Valley Mall,$600000 damage, Cars stranded at Crabtree Valley Mall,✅ Full Sentinel-1/2
+2018-05-22,12.49,755610,Continued flooding at Crabtree Valley Mall,Newton Road washed out and collapsed,✅ Full Sentinel-1/2
+2018-07-06,10.50,775032,Flooding along North Raleigh Boulevard,Water rescue required, car stuck in flood waters,✅ Full Sentinel-1/2
+2018-07-06,10.50,775034,High water on Peace Street and Capitol Boulevard,Road closures due to flooding,✅ Full Sentinel-1/2
+2018-07-06,10.50,775037,Atlantic Avenue at Hodges closed,Flooding reported, road closed,✅ Full Sentinel-1/2
+2018-08-20,13.42,781167,Multiple water rescues across Raleigh,$80000 damage, Vehicles submerged in 4+ feet of water,✅ Full Sentinel-1/2
+2018-11-13,13.77,781163,Multiple water rescues reported,Water rescues at multiple locations,✅ Full Sentinel-1/2

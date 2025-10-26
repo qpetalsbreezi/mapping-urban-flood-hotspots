@@ -1,5 +1,7 @@
 # Platform Registration and Setup Guide
 
+⚠️ **URGENT UPDATE (2024)**: Copernicus SciHub URLs have changed. The ESA has migrated to new data portals. See updated URLs below.
+
 ## Overview
 This guide provides step-by-step instructions for registering and setting up access to Google Earth Engine and Copernicus Open Access Hub.
 
@@ -7,16 +9,32 @@ This guide provides step-by-step instructions for registering and setting up acc
 
 ## Part 1: Copernicus Open Access Hub (SciHub)
 
+### ⚠️ **NEW URLs (2024 Update)**
+
+Copernicus has migrated to new data portals. Try these URLs:
+
+**Primary Option - New Copernicus Hub**:
+- Go to: https://dataspace.copernicus.eu/
+- Registration: https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/registrations
+
+**Alternative - DIAS Access**:
+- Sentinel Hub DIAS: https://dataspace.copernicus.eu/
+- Requires free registration
+
+**Backup - Old SciHub (if reachable)**:
+- https://scihub.copernicus.eu/ (old URL, may be deprecated)
+
 ### Registration Steps
 
 1. **Navigate to Registration Page**
-   - Go to: https://scihub.copernicus.eu/dhus/#/self-registration
-   - Or visit: https://scihub.copernicus.eu/ and click "Sign up"
+   - **NEW URL**: https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/registrations
+   - Create a Copernicus account
+   - Email verification required
 
 2. **Fill Out Registration Form**
-   - **Username**: Choose a unique username (e.g., `science_fair_2025_raleigh`)
+   - **Username**: Choose a unique username
    - **Password**: Create a strong password (save this!)
-   - **Email**: Use your email (e.g., saanvi.sanaa@gmail.com)
+   - **Email**: Use your email
    - **Name**: Your full name
    - **Organization**: (Optional) Can list as "Student Research"
 

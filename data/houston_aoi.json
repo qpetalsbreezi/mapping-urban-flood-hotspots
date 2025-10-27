@@ -1,0 +1,21 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Houston Area of Interest"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-95.6, 29.6],
+          [-95.1, 29.6],
+          [-95.1, 29.9],
+          [-95.6, 29.9],
+          [-95.6, 29.6]
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Raleigh Area of Interest"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-78.8, 35.6],
+          [-78.5, 35.6],
+          [-78.5, 36.0],
+          [-78.8, 36.0],
+          [-78.8, 35.6]
+        ]
+      }
+    }
+  ]
+}

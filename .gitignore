@@ -46,12 +46,15 @@ venv.bak/
 *~
 
 # Data files (large datasets)
-data/raw/sentinel1/
-data/raw/sentinel2/
-data/raw/*.tif
-data/raw/*.tiff
-data/processed/*.tif
-data/processed/*.tiff
+# Satellite data - too large for GitHub
+data/raw/*/satellite/
+data/raw/*/sentinel1/
+data/raw/*/sentinel2/
+data/raw/*/*.SAFE/
+data/raw/*/*.tif
+data/raw/*/*.tiff
+data/processed/*/*.tif
+data/processed/*/*.tiff
 *.hdf5
 *.nc
 *.grib

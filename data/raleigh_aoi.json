@@ -4,16 +4,19 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "Raleigh Area of Interest"
+        "name": "Raleigh Flood AOI 2017",
+        "description": "Tight bounding box around downtown Raleigh and Crabtree Creek corridor"
       },
       "geometry": {
-        "type": "LineString",
+        "type": "Polygon",
         "coordinates": [
-          [-78.8, 35.6],
-          [-78.5, 35.6],
-          [-78.5, 36.0],
-          [-78.8, 36.0],
-          [-78.8, 35.6]
+          [
+            [-78.6785, 35.7730],
+            [-78.6345, 35.7730],
+            [-78.6345, 35.8235],
+            [-78.6785, 35.8235],
+            [-78.6785, 35.7730]
+          ]
         ]
       }
     }

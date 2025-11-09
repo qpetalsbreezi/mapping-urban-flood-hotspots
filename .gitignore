@@ -68,7 +68,6 @@ results/plots/*.pdf
 
 # Local analysis experiments (not tracked)
 data/processed/raleigh/flood_detection_comparison.png
-data/processed/raleigh/gee_download_data.py
 data/processed/raleigh/gee_flood_detection.py
 data/processed/raleigh/gee_flood_visualization.png
 data/processed/raleigh/simple_flood_analysis.py

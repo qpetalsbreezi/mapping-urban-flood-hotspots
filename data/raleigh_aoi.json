@@ -5,17 +5,17 @@
       "type": "Feature",
       "properties": {
         "name": "Raleigh Flood AOI 2017",
-        "description": "Bounding box around Brier Creek / Lumley Road flood corridor (April 2017 event)"
+        "description": "Bounding box covering the Raleigh metro flood impact area"
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
-            [-78.8200, 35.9300],
-            [-78.7400, 35.9300],
-            [-78.7400, 35.8700],
-            [-78.8200, 35.8700],
-            [-78.8200, 35.9300]
+            [-78.9000, 35.6000],
+            [-78.4000, 35.6000],
+            [-78.4000, 36.1000],
+            [-78.9000, 36.1000],
+            [-78.9000, 35.6000]
           ]
         ]
       }

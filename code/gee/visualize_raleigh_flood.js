@@ -29,8 +29,8 @@ var radarVis = {min: -20, max: 0};
 var opticalWindowDays = 10;
 var s2Vis = {bands: ['B4', 'B3', 'B2'], min: 0.04, max: 0.25};
 var landsatVis = {bands: ['red', 'green', 'blue'], min: 0.03, max: 0.22};
-var showSentinel2 = false; // flip to true to overlay Sentinel-2
-var showLandsat = false;   // flip to true to overlay Landsat
+var showSentinel2 = true;
+var showLandsat = true;
 
 // Catalog of vetted Raleigh flood events with Sentinel-1 coverage
 var events = [
@@ -538,7 +538,9 @@ function loadSentinel1(scene, region) {
     return null;
   }
   if (scene.imageId) {
-    return ee.Image(scene.imageId).clip(region);
+    var prefix = 'COPERNICUS/S1_GRD/';
+    var id = scene.imageId.indexOf(prefix) === 0 ? scene.imageId : prefix + scene.imageId;
+    return ee.Image(id).clip(region);
   }
   if (scene.date) {
     return getSentinelImage(scene.date, nextDay(scene.date), region);
@@ -578,12 +580,19 @@ if (after) {
 
 Map.addLayer(ee.Image().paint(focusAOI, 1, 2), {palette: 'red'}, 'Focus AOI');
 
+function formatLabel(prefix, scene) {
+  if (!scene || !scene.date) {
+    return prefix;
+  }
+  return prefix + ' ' + scene.date;
+}
+
 if (showSentinel2) {
   if (s2Before) {
-    Map.addLayer(s2Before, s2Vis, 'Sentinel-2 Before');
+    Map.addLayer(s2Before, s2Vis, formatLabel('Sentinel-2 Before', eventInfo.sentinel2.before));
   }
   if (s2After) {
-    Map.addLayer(s2After, s2Vis, 'Sentinel-2 After');
+    Map.addLayer(s2After, s2Vis, formatLabel('Sentinel-2 After', eventInfo.sentinel2.after));
   }
   if (!s2Before && !s2After) {
     print('No Sentinel-2 imagery available within ±' + opticalWindowDays + ' days.');
@@ -592,10 +601,10 @@ if (showSentinel2) {
 
 if (showLandsat) {
   if (landsatBefore) {
-    Map.addLayer(landsatBefore, landsatVis, 'Landsat Before');
+    Map.addLayer(landsatBefore, landsatVis, formatLabel('Landsat Before', eventInfo.landsat.before));
   }
   if (landsatAfter) {
-    Map.addLayer(landsatAfter, landsatVis, 'Landsat After');
+    Map.addLayer(landsatAfter, landsatVis, formatLabel('Landsat After', eventInfo.landsat.after));
   }
   if (!landsatBefore && !landsatAfter) {
     print('No Landsat imagery available within ±' + opticalWindowDays + ' days.');

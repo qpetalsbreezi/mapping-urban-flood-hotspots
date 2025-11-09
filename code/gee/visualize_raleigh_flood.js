@@ -3,20 +3,20 @@
  *
  * Paste this script into the Google Earth Engine Code Editor to inspect
  * Sentinel-1 scenes before and after the flood. AOI coordinates mirror
- * `data/raleigh_aoi.json` (downtown Raleigh + Crabtree Creek corridor).
+ * `data/raleigh_aoi.json` (Brier Creek / Lumley Road corridor).
  */
 
 var outerAOICoords = [
-  [-78.6785, 35.7730],
-  [-78.6345, 35.7730],
-  [-78.6345, 35.8235],
-  [-78.6785, 35.8235],
-  [-78.6785, 35.7730]
+  [-78.8200, 35.9300],
+  [-78.7400, 35.9300],
+  [-78.7400, 35.8700],
+  [-78.8200, 35.8700],
+  [-78.8200, 35.9300]
 ];
 var outerAOI = ee.Geometry.Polygon([outerAOICoords]);
 
-// Tighten the AOI slightly for visualization (buffer inward by 1 km)
-var focusAOI = outerAOI.buffer(-1000).bounds();
+// Tighten the AOI slightly for visualization (buffer inward by 1.5 km)
+var focusAOI = outerAOI.buffer(-1500).bounds();
 
 // Clear previous layers and zoom to the focus area
 Map.clear();

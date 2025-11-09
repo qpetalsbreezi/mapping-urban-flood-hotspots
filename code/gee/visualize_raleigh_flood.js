@@ -2,24 +2,21 @@
  * Raleigh Flood Event Visualization (April 2017)
  *
  * Paste this script into the Google Earth Engine Code Editor to inspect
- * Sentinel-1 scenes before and after the flood. It converts the AOI from
- * `data/raleigh_aoi.json` into a polygon, buffers inward to define a smaller
- * visualization area, then loads and clips the VV polarization images for
- * April 21 and May 3, 2017.
+ * Sentinel-1 scenes before and after the flood. AOI coordinates mirror
+ * `data/raleigh_aoi.json` (downtown Raleigh + Crabtree Creek corridor).
  */
 
-// Coordinates from data/raleigh_aoi.json (LineString converted to Polygon)
 var outerAOICoords = [
-  [-78.8, 35.6],
-  [-78.5, 35.6],
-  [-78.5, 36.0],
-  [-78.8, 36.0],
-  [-78.8, 35.6]  // close the ring
+  [-78.6785, 35.7730],
+  [-78.6345, 35.7730],
+  [-78.6345, 35.8235],
+  [-78.6785, 35.8235],
+  [-78.6785, 35.7730]
 ];
 var outerAOI = ee.Geometry.Polygon([outerAOICoords]);
 
-// Tighten the AOI for visualization (buffer inward by 5 km, then take bounds)
-var focusAOI = outerAOI.buffer(-5000).bounds();
+// Tighten the AOI slightly for visualization (buffer inward by 1 km)
+var focusAOI = outerAOI.buffer(-1000).bounds();
 
 // Clear previous layers and zoom to the focus area
 Map.clear();

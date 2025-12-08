@@ -259,20 +259,32 @@ def gather_optical_candidates(collection: ee.ImageCollection, mask_fn, band_name
 def choose_best_optical(candidates: list[ImagerySelection], is_before: bool,
                         event_dt: datetime, min_fraction: float) -> Optional[ImagerySelection]:
     if is_before:
-        candidates = [c for c in candidates if c.date and c.date <= event_dt]
+        candidates = [c for c in candidates if c.date and c.date < event_dt]
     else:
-        candidates = [c for c in candidates if c.date and c.date >= event_dt]
+        # For "after" scenes, allow same-day or later (offset >= 0)
+        candidates = [c for c in candidates if c.offset_days is not None and c.offset_days >= 0]
     if not candidates:
         return None
+
+    # Exclude completely masked scenes (0% valid fraction) - this is the real issue
+    candidates = [c for c in candidates if c.valid_fraction is None or c.valid_fraction > 0.0]
+    if not candidates:
+        return None
+
+    # Filter out scenes with very low valid fraction (below threshold)
+    # but keep at least one candidate if all are below threshold
+    valid_candidates = [c for c in candidates if c.valid_fraction is not None and c.valid_fraction >= min_fraction]
+    if not valid_candidates:
+        # If all scenes are below threshold, still return the best one (with warning via valid_fraction)
+        valid_candidates = candidates
 
     def score(c: ImagerySelection) -> tuple[float, float]:
         frac = c.valid_fraction if c.valid_fraction is not None else 0.0
         offset_penalty = abs(c.offset_days or 0)
         return (-frac, offset_penalty)
 
-    candidates.sort(key=score)
-    best = candidates[0]
-    # If best fraction is below the threshold, keep it but note via valid_fraction.
+    valid_candidates.sort(key=score)
+    best = valid_candidates[0]
     return best
 
 

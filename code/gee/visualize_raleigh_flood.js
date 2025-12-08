@@ -65,11 +65,7 @@ var events = [
         imageId: 'LANDSAT/LC08/C02/T1_L2/LC08_016035_20180512',
         validFraction: 0.99
       },
-      after: {
-        date: '2018-05-21',
-        imageId: 'LANDSAT/LC08/C02/T1_L2/LC08_015035_20180521',
-        validFraction: 0.0
-      }
+      after: null
     }
   },
   {
@@ -427,6 +423,13 @@ var events = [
 // Pick an event ID from the list above
 var selectedEventId = '755610';
 
+function formatLabel(prefix, scene) {
+  if (!scene || !scene.date) {
+    return prefix;
+  }
+  return prefix + ' ' + scene.date;
+}
+
 function nextDay(dateStr) {
   var d = new Date(dateStr + 'T00:00:00Z');
   d.setUTCDate(d.getUTCDate() + 1);
@@ -578,7 +581,11 @@ if (after) {
   print('Warning: missing Sentinel-1 "after" scene!');
 }
 
-Map.addLayer(ee.Image().paint(focusAOI, 1, 2), {palette: 'red'}, 'Focus AOI');
+Map.addLayer(
+  ee.Image().paint(focusAOI, 1, 2),
+  {palette: 'red'},
+  eventInfo.label + ' (' + eventInfo.sentinel1.after.date + ') AOI'
+);
 
 function formatLabel(prefix, scene) {
   if (!scene || !scene.date) {

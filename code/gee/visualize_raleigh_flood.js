@@ -24,13 +24,18 @@ var focusAOI = outerAOI.buffer(-5000).bounds();
 Map.clear();
 Map.centerObject(focusAOI, 13);
 
+// ============================================================================
+// EVENT SELECTION - Change this number (1-11) to view different events
+// ============================================================================
+var selectedEventIndex = 1; // 1-based index (1 = first event, 11 = last event)
+
 // Sentinel-1 visualization stretch (VV polarization)
 var radarVis = {min: -20, max: 0};
 var opticalWindowDays = 10;
 var s2Vis = {bands: ['B4', 'B3', 'B2'], min: 0.04, max: 0.25};
 var landsatVis = {bands: ['red', 'green', 'blue'], min: 0.03, max: 0.22};
-var showSentinel2 = true;
-var showLandsat = true;
+// Note: All layers are loaded but unchecked by default (except AOI and flood markers)
+// You can toggle them on/off in the layers panel without reloading
 
 // Catalog of vetted Raleigh flood events with Sentinel-1 coverage
 var events = [
@@ -508,8 +513,16 @@ function addFloodLocationMarkers(eventId) {
   print('Added ' + locations.length + ' flood location markers for event ' + eventId);
 }
 
-// Pick an event ID from the list above
-var selectedEventId = '755610';
+// Get selected event by index (1-based)
+function getEventByIndex(index) {
+  if (index < 1 || index > events.length) {
+    throw new Error('Event index out of range. Use 1-' + events.length);
+  }
+  return events[index - 1];
+}
+
+var selectedEvent = getEventByIndex(selectedEventIndex);
+var selectedEventId = selectedEvent.id;
 
 function formatLabel(prefix, scene) {
   if (!scene || !scene.date) {
@@ -524,6 +537,7 @@ function nextDay(dateStr) {
   return d.toISOString().slice(0, 10);
 }
 
+// Keep findEvent for backward compatibility, but use selectedEvent directly
 function findEvent(eventId) {
   for (var i = 0; i < events.length; i++) {
     if (events[i].id === eventId) {
@@ -639,8 +653,9 @@ function loadSentinel1(scene, region) {
   return null;
 }
 
-var eventInfo = findEvent(selectedEventId);
-print('Selected event:', eventInfo.label);
+var eventInfo = selectedEvent;
+print('Selected event [' + selectedEventIndex + '/' + events.length + ']:', eventInfo.label);
+print('  Event ID:', eventInfo.id);
 print('  Sentinel-1 before ->', eventInfo.sentinel1.before);
 print('  Sentinel-1 after  ->', eventInfo.sentinel1.after);
 print('  Sentinel-2 before ->', eventInfo.sentinel2.before);
@@ -657,14 +672,18 @@ var landsatAfter = loadLandsat(eventInfo.landsat.after, focusAOI);
 
 if (before) {
   Map.addLayer(before.select('VV'), radarVis,
-    'Sentinel-1 Before ' + (eventInfo.sentinel1.before && eventInfo.sentinel1.before.date));
+    'Sentinel-1 Before ' + (eventInfo.sentinel1.before && eventInfo.sentinel1.before.date),
+    false // Default: hidden for faster visualization
+  );
 } else {
   print('Warning: missing Sentinel-1 "before" scene.');
 }
 
 if (after) {
   Map.addLayer(after.select('VV'), radarVis,
-    'Sentinel-1 After ' + (eventInfo.sentinel1.after && eventInfo.sentinel1.after.date));
+    'Sentinel-1 After ' + (eventInfo.sentinel1.after && eventInfo.sentinel1.after.date),
+    false // Default: hidden for faster visualization
+  );
 } else {
   print('Warning: missing Sentinel-1 "after" scene!');
 }
@@ -682,28 +701,26 @@ function formatLabel(prefix, scene) {
   return prefix + ' ' + scene.date;
 }
 
-if (showSentinel2) {
-  if (s2Before) {
-    Map.addLayer(s2Before, s2Vis, formatLabel('Sentinel-2 Before', eventInfo.sentinel2.before));
-  }
-  if (s2After) {
-    Map.addLayer(s2After, s2Vis, formatLabel('Sentinel-2 After', eventInfo.sentinel2.after));
-  }
-  if (!s2Before && !s2After) {
-    print('No Sentinel-2 imagery available within ±' + opticalWindowDays + ' days.');
-  }
+// Add Sentinel-2 layers (unchecked by default for faster visualization)
+if (s2Before) {
+  Map.addLayer(s2Before, s2Vis, formatLabel('Sentinel-2 Before', eventInfo.sentinel2.before), false);
+}
+if (s2After) {
+  Map.addLayer(s2After, s2Vis, formatLabel('Sentinel-2 After', eventInfo.sentinel2.after), false);
+}
+if (!s2Before && !s2After) {
+  print('No Sentinel-2 imagery available within ±' + opticalWindowDays + ' days.');
 }
 
-if (showLandsat) {
-  if (landsatBefore) {
-    Map.addLayer(landsatBefore, landsatVis, formatLabel('Landsat Before', eventInfo.landsat.before));
-  }
-  if (landsatAfter) {
-    Map.addLayer(landsatAfter, landsatVis, formatLabel('Landsat After', eventInfo.landsat.after));
-  }
-  if (!landsatBefore && !landsatAfter) {
-    print('No Landsat imagery available within ±' + opticalWindowDays + ' days.');
-  }
+// Add Landsat layers (unchecked by default for faster visualization)
+if (landsatBefore) {
+  Map.addLayer(landsatBefore, landsatVis, formatLabel('Landsat Before', eventInfo.landsat.before), false);
+}
+if (landsatAfter) {
+  Map.addLayer(landsatAfter, landsatVis, formatLabel('Landsat After', eventInfo.landsat.after), false);
+}
+if (!landsatBefore && !landsatAfter) {
+  print('No Landsat imagery available within ±' + opticalWindowDays + ' days.');
 }
 
 // Add known flood location markers from NOAA data

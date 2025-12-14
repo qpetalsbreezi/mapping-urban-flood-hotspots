@@ -420,6 +420,94 @@ var events = [
   }
 ];
 
+// Known flood locations from NOAA data (coordinates and descriptions)
+var floodLocations = {
+  '755610': [
+    {lat: 35.89, lon: -78.71, desc: 'Begin: Crabtree Valley Mall area'},
+    {lat: 35.82, lon: -78.71, desc: 'End: Crabtree Creek overflow'},
+    {lat: 35.85, lon: -78.70, desc: 'Crabtree Valley Mall (approx)'},
+    {lat: 35.86, lon: -78.68, desc: 'Newton Road near Six Forks Road (approx)'},
+    {lat: 35.88, lon: -78.71, desc: 'Leesville Road & Millbrook Road (approx)'}
+  ],
+  '775032': [
+    {lat: 35.8, lon: -78.61, desc: 'North Raleigh Boulevard near Millbank Street'}
+  ],
+  '775034': [
+    {lat: 35.79, lon: -78.64, desc: 'Peace Street and Capitol Boulevard'}
+  ],
+  '775037': [
+    {lat: 35.8148, lon: -78.6198, desc: 'Atlantic Avenue at Hodges Street'}
+  ],
+  '775029': [
+    {lat: 35.6332, lon: -78.7092, desc: 'Banks Road and Ten Ten Road'}
+  ],
+  '775031': [
+    {lat: 35.7294, lon: -78.6466, desc: 'Gideon Creek Way near Durham Drive'}
+  ],
+  '781167': [
+    {lat: 35.8049, lon: -78.623, desc: 'Wake Forest Road near Georgetown Road'}
+  ],
+  '1029187': [
+    {lat: 35.7864, lon: -78.7353, desc: 'Wolf Creek Circle'}
+  ],
+  '1173317': [
+    {lat: 35.7794, lon: -78.6435, desc: 'Union Station (S West St & W Martin St)'}
+  ],
+  '1208861': [
+    {lat: 35.7742, lon: -78.6469, desc: 'Union Station (West St & Martin St)'}
+  ],
+  '1208432': [
+    {lat: 35.77, lon: -78.73, desc: 'I-440 eastbound (closed)'}
+  ]
+};
+
+// Function to create and display flood location markers
+function addFloodLocationMarkers(eventId) {
+  var locations = floodLocations[eventId];
+  if (!locations || locations.length === 0) {
+    print('No location data available for event ' + eventId);
+    return;
+  }
+  
+  var features = locations.map(function(loc) {
+    return ee.Feature(
+      ee.Geometry.Point([loc.lon, loc.lat]),
+      {description: loc.desc}
+    );
+  });
+  
+  var locationCollection = ee.FeatureCollection(features);
+  
+  // Add point markers
+  Map.addLayer(
+    locationCollection,
+    {
+      color: 'red',
+      pointSize: 5,
+      pointShape: 'circle'
+    },
+    'Known Flood Locations (NOAA)'
+  );
+  
+  // Add buffered areas around points (100m radius)
+  var buffered = locationCollection.map(function(feature) {
+    return feature.buffer(100); // 100 meters
+  });
+  
+  Map.addLayer(
+    buffered,
+    {
+      color: 'red',
+      fillColor: 'red',
+      fillOpacity: 0.2
+    },
+    'Flood Location Buffers (100m)',
+    false // Start with layer turned off
+  );
+  
+  print('Added ' + locations.length + ' flood location markers for event ' + eventId);
+}
+
 // Pick an event ID from the list above
 var selectedEventId = '755610';
 
@@ -617,3 +705,6 @@ if (showLandsat) {
     print('No Landsat imagery available within ±' + opticalWindowDays + ' days.');
   }
 }
+
+// Add known flood location markers from NOAA data
+addFloodLocationMarkers(selectedEventId);

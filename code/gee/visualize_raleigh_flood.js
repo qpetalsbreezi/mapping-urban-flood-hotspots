@@ -31,9 +31,9 @@ Map.clear();
 Map.centerObject(focusAOI, 13);
 
 // ============================================================================
-// EVENT SELECTION - Change this number (1-11) to view different events
+// EVENT SELECTION - Change this number (1-10) to view different events
 // ============================================================================
-var selectedEventIndex = 1; // 1-based index (1 = first event, 11 = last event)
+var selectedEventIndex = 1; // 1-based index (1 = first event, 10 = last event)
 
 // Sentinel-1 visualization stretch (VV polarization)
 var radarVis = {min: -20, max: 0};
@@ -267,28 +267,6 @@ var events = [
         imageId: 'LANDSAT/LC08/C02/T1_L2/LC08_015035_20180708',
         validFraction: 0.851
       }
-    }
-  },
-  {
-    id: '775031',
-    label: 'Urban flooding (July 7, 2018 – event B)',
-    sentinel1: {
-      before: {
-        date: '2018-06-27',
-        imageId: 'S1A_IW_GRDH_1SDV_20180627T231411_20180627T231436_022549_027150_2A0E'
-      },
-      after: {
-        date: '2018-07-09',
-        imageId: 'S1A_IW_GRDH_1SDV_20180709T231411_20180709T231436_022724_02766D_A8A8'
-      }
-    },
-    sentinel2: {
-      before: null,
-      after: null
-    },
-    landsat: {
-      before: null,
-      after: null
     }
   },
   {
@@ -690,6 +668,17 @@ var s2After = loadSentinel2(eventInfo.sentinel2.after, focusAOI);
 var landsatBefore = loadLandsat(eventInfo.landsat.before, focusAOI);
 var landsatAfter = loadLandsat(eventInfo.landsat.after, focusAOI);
 
+// Urban reference mask (built-up OR >=20% impervious) for context
+var worldCover = ee.Image('ESA/WorldCover/v200/2021').select('Map').rename('landcover');
+var worldCoverBuilt = worldCover.eq(50); // WorldCover built class
+var nlcdImpervious = ee.Image('USGS/NLCD_RELEASES/2021_REL/NLCD/2021')
+  .select('impervious')
+  .divide(100);
+var nlcdImperviousMask = nlcdImpervious
+  .updateMask(nlcdImpervious.mask())
+  .gte(0.2); // >=20% impervious
+var urbanMask = worldCoverBuilt.or(nlcdImperviousMask);
+
 // Holder for the flood mask so we can overlay it last (above optical layers)
 var floodMaskLayer = null;
 // Sentinel-1 VV/VH in dB plus difference/ratio helpers for debugging flood signal
@@ -755,6 +744,9 @@ if (beforeVV && afterVV) {
     : null;
   var floodMask = vhMask ? vvMask.and(vhMask) : vvMask;
 
+  // Keep only built/impervious pixels before cleaning speckle
+  floodMask = floodMask.updateMask(urbanMask);
+
   // Remove tiny speckle blobs (min 3 connected pixels)
   floodMask = floodMask.updateMask(floodMask.connectedPixelCount(8, true).gte(3));
 
@@ -799,12 +791,13 @@ Map.addLayer(
   true
 );
 
-function formatLabel(prefix, scene) {
-  if (!scene || !scene.date) {
-    return prefix;
-  }
-  return prefix + ' ' + scene.date;
-}
+// Visualize urban mask for reference (union of WorldCover built + NLCD impervious)
+Map.addLayer(
+  urbanMask.selfMask(),
+  {palette: ['#2b2b2b'], opacity: 0.45},
+  'Urban Mask (WorldCover built OR NLCD impervious >=20%)',
+  false
+);
 
 // Add Sentinel-2 layers (unchecked by default for faster visualization)
 if (s2Before) {

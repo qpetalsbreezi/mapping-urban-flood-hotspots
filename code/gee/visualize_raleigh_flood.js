@@ -20,6 +20,12 @@ var outerAOI = ee.Geometry.Polygon([outerAOICoords]);
 // Tighten the AOI slightly for visualization (buffer inward by 5 km)
 var focusAOI = outerAOI.buffer(-5000).bounds();
 
+// Crabtree Valley Mall focus box (roughly 2 km square) to help zoom on known flooding
+var crabtreeBox = ee.Geometry.Rectangle({
+  coords: [-78.72, 35.83, -78.68, 35.87],
+  geodesic: false
+});
+
 // Clear previous layers and zoom to the focus area
 Map.clear();
 Map.centerObject(focusAOI, 13);
@@ -487,7 +493,7 @@ function addFloodLocationMarkers(eventId) {
   Map.addLayer(
     locationCollection,
     {
-      color: 'red',
+      color: '#ff9800', // orange to distinguish from flood mask
       pointSize: 5,
       pointShape: 'circle'
     },
@@ -502,8 +508,8 @@ function addFloodLocationMarkers(eventId) {
   Map.addLayer(
     buffered,
     {
-      color: 'red',
-      fillColor: 'red',
+      color: '#ff9800',
+      fillColor: '#ff9800',
       fillOpacity: 0.2
     },
     'Flood Location Buffers (100m)',
@@ -553,8 +559,22 @@ function getSentinelImage(startDate, endDate, region) {
     .filterBounds(region)
     .filterDate(startDate, endDate)
     .filter(ee.Filter.eq('instrumentMode', 'IW'))
-    .filter(ee.Filter.eq('transmitterReceiverPolarisation', ['VV', 'VH']))
+    // Polarisation filter using listContains to avoid empty collections
+    .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VV'))
+    .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VH'))
     .first();
+}
+
+// Convert linear sigma0 to dB for easier interpretation
+function toDb(img) {
+  return ee.Image(img).log10().multiply(10);
+}
+
+// Safer dB conversion that guards against zeros and adds an optional linear preview.
+function toDbSafe(img, bandName) {
+  var band = ee.Image(img).select(bandName);
+  var clipped = band.max(1e-6); // avoid log of zero
+  return clipped.log10().multiply(10);
 }
 
 function maskS2Clouds(image) {
@@ -642,15 +662,15 @@ function loadSentinel1(scene, region) {
   if (!scene) {
     return null;
   }
+  var img = null;
   if (scene.imageId) {
     var prefix = 'COPERNICUS/S1_GRD/';
     var id = scene.imageId.indexOf(prefix) === 0 ? scene.imageId : prefix + scene.imageId;
-    return ee.Image(id).clip(region);
+    img = ee.Image(id);
+  } else if (scene.date) {
+    img = getSentinelImage(scene.date, nextDay(scene.date), region);
   }
-  if (scene.date) {
-    return getSentinelImage(scene.date, nextDay(scene.date), region);
-  }
-  return null;
+  return img ? img.clip(region) : null;
 }
 
 var eventInfo = selectedEvent;
@@ -670,28 +690,113 @@ var s2After = loadSentinel2(eventInfo.sentinel2.after, focusAOI);
 var landsatBefore = loadLandsat(eventInfo.landsat.before, focusAOI);
 var landsatAfter = loadLandsat(eventInfo.landsat.after, focusAOI);
 
-if (before) {
-  Map.addLayer(before.select('VV'), radarVis,
-    'Sentinel-1 Before ' + (eventInfo.sentinel1.before && eventInfo.sentinel1.before.date),
-    false // Default: hidden for faster visualization
-  );
+// Holder for the flood mask so we can overlay it last (above optical layers)
+var floodMaskLayer = null;
+// Sentinel-1 VV/VH in dB plus difference/ratio helpers for debugging flood signal
+print('Has S1 before:', !!before, 'Has S1 after:', !!after);
+
+// Log the actual S1 system IDs to verify correct scenes are loaded per event
+if (before || after) {
+  print('Loaded S1 image IDs', ee.Dictionary({
+    before_id: before ? before.get('system:id') : 'none',
+    after_id: after ? after.get('system:id') : 'none'
+  }));
+}
+
+var beforeVV = before ? toDbSafe(before, 'VV') : null;
+var afterVV = after ? toDbSafe(after, 'VV') : null;
+var beforeVH = before && before.bandNames().contains('VH') ? toDbSafe(before, 'VH') : null;
+var afterVH = after && after.bandNames().contains('VH') ? toDbSafe(after, 'VH') : null;
+
+if (beforeVV) {
+  Map.addLayer(beforeVV, radarVis, 'S1 VV dB Before ' + (eventInfo.sentinel1.before && eventInfo.sentinel1.before.date), false);
+  Map.addLayer(before.select('VV'), {min: 0, max: 0.25}, 'S1 VV Linear Before (debug)', false);
 } else {
   print('Warning: missing Sentinel-1 "before" scene.');
 }
 
-if (after) {
-  Map.addLayer(after.select('VV'), radarVis,
-    'Sentinel-1 After ' + (eventInfo.sentinel1.after && eventInfo.sentinel1.after.date),
-    false // Default: hidden for faster visualization
-  );
+if (afterVV) {
+  Map.addLayer(afterVV, radarVis, 'S1 VV dB After ' + (eventInfo.sentinel1.after && eventInfo.sentinel1.after.date), false);
+  Map.addLayer(after.select('VV'), {min: 0, max: 0.25}, 'S1 VV Linear After (debug)', false);
 } else {
   print('Warning: missing Sentinel-1 "after" scene!');
+}
+
+// Change layers to highlight flooding (negative = darker after)
+if (beforeVV && afterVV) {
+  var vvChange = afterVV.subtract(beforeVV);
+  var changePalette = ['#0b4f6c', '#4f9cf6', '#d1d5db', '#fbbf24', '#b91c1c']; // blue → gray → red
+  Map.addLayer(
+    vvChange,
+    {min: -4, max: 4, palette: changePalette},
+    'S1 VV dB Change',
+    true
+  );
+
+  // Smoothed change (basic speckle reduction) and flood mask
+  var smoothRadius = 90; // meters
+  var beforeVVSmoothed = beforeVV.focal_mean(smoothRadius, 'circle', 'meters');
+  var afterVVSmoothed = afterVV.focal_mean(smoothRadius, 'circle', 'meters');
+  var vvChangeSmoothed = afterVVSmoothed.subtract(beforeVVSmoothed);
+
+  Map.addLayer(
+    vvChangeSmoothed,
+    {min: -3, max: 3, palette: changePalette},
+    'S1 VV dB Change (smoothed)',
+    false
+  );
+
+  // Flood mask: stricter threshold and VH confirmation when available
+  var vvMask = vvChangeSmoothed.lt(-1.3);
+  var vhMask = beforeVH && afterVH
+    ? afterVH.focal_mean(smoothRadius, 'circle', 'meters')
+        .subtract(beforeVH.focal_mean(smoothRadius, 'circle', 'meters'))
+        .lt(-1.3)
+    : null;
+  var floodMask = vhMask ? vvMask.and(vhMask) : vvMask;
+
+  // Remove tiny speckle blobs (min 3 connected pixels)
+  floodMask = floodMask.updateMask(floodMask.connectedPixelCount(8, true).gte(3));
+
+  // Quick diagnostic: how many flood pixels inside focusAOI?
+  var floodPixelCount = floodMask.reduceRegion({
+    reducer: ee.Reducer.sum(),
+    geometry: focusAOI,
+    scale: 20,
+    bestEffort: true
+  }).get('VV');
+  print('Flood mask pixel count (VV pixels within focus AOI):', floodPixelCount);
+
+  floodMaskLayer = floodMask.selfMask();
+
+  var vvRatio = afterVV.subtract(beforeVV).divide(beforeVV.abs().max(1e-6));
+  Map.addLayer(
+    vvRatio,
+    {min: -0.5, max: 0.5, palette: ['#0b4f6c', '#4f9cf6', '#d1d5db', '#fbbf24', '#b91c1c']},
+    'S1 VV Rel Change',
+    false
+  );
+}
+
+if (beforeVH && afterVH) {
+  Map.addLayer(beforeVH, radarVis, 'S1 VH dB Before', false);
+  Map.addLayer(afterVH, radarVis, 'S1 VH dB After', false);
+  var vhChange = afterVH.subtract(beforeVH);
+  Map.addLayer(vhChange, {min: -4, max: 4, palette: changePalette}, 'S1 VH dB Change', false);
 }
 
 Map.addLayer(
   ee.Image().paint(focusAOI, 1, 2),
   {palette: 'red'},
   eventInfo.label + ' (' + eventInfo.sentinel1.after.date + ') AOI'
+);
+
+// Crabtree highlight box
+Map.addLayer(
+  ee.Image().paint(crabtreeBox, 1, 2),
+  {palette: 'yellow'},
+  'Crabtree focus box',
+  true
 );
 
 function formatLabel(prefix, scene) {
@@ -721,6 +826,21 @@ if (landsatAfter) {
 }
 if (!landsatBefore && !landsatAfter) {
   print('No Landsat imagery available within ±' + opticalWindowDays + ' days.');
+}
+
+// Add flood mask last so it stays visible over optical/radar backdrops
+if (floodMaskLayer) {
+  var floodFill = floodMaskLayer.visualize({
+    palette: ['#e60000'], // red fill
+    opacity: 0.55
+  });
+  var floodOutline = floodMaskLayer
+    .focal_max(40, 'circle', 'meters')
+    .subtract(floodMaskLayer)
+    .selfMask()
+    .visualize({palette: ['#8b0000'], opacity: 0.9}); // darker red outline
+  var floodVis = ee.ImageCollection([floodFill, floodOutline]).mosaic();
+  Map.addLayer(floodVis, {}, 'S1 VV Flood Mask (< -1.3 dB)', true);
 }
 
 // Add known flood location markers from NOAA data

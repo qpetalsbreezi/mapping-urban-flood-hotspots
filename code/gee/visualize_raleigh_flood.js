@@ -679,6 +679,11 @@ var nlcdImperviousMask = nlcdImpervious
   .gte(0.2); // >=20% impervious
 var urbanMask = worldCoverBuilt.or(nlcdImperviousMask);
 
+// Permanent water mask for reference (not applied to flood mask yet)
+var jrcWater = ee.Image('JRC/GSW1_4/GlobalSurfaceWater').select('occurrence');
+// Unmask to 0 so the mask doesn't disappear where JRC has nodata
+var permanentWater = jrcWater.gte(50).unmask(0).rename('perm_water'); // occurrence >=50%
+
 // Holder for the flood mask so we can overlay it last (above optical layers)
 var floodMaskLayer = null;
 // Sentinel-1 VV/VH in dB plus difference/ratio helpers for debugging flood signal
@@ -747,6 +752,9 @@ if (beforeVV && afterVV) {
   // Keep only built/impervious pixels before cleaning speckle
   floodMask = floodMask.updateMask(urbanMask);
 
+  // Drop permanent water pixels (JRC occurrence >=50%)
+  floodMask = floodMask.updateMask(permanentWater.not());
+
   // Remove tiny speckle blobs (min 3 connected pixels)
   floodMask = floodMask.updateMask(floodMask.connectedPixelCount(8, true).gte(3));
 
@@ -796,6 +804,23 @@ Map.addLayer(
   urbanMask.selfMask(),
   {palette: ['#2b2b2b'], opacity: 0.45},
   'Urban Mask (WorldCover built OR NLCD impervious >=20%)',
+  false
+);
+
+// Visualize permanent water (JRC occurrence >=50%) for reference
+var waterFill = permanentWater.selfMask().visualize({
+  palette: ['#ff00ff'],
+  opacity: 0.5
+});
+var waterOutline = permanentWater
+  .focal_max(60, 'circle', 'meters')
+  .subtract(permanentWater)
+  .selfMask()
+  .visualize({palette: ['#ff00ff'], opacity: 0.9});
+Map.addLayer(
+  ee.ImageCollection([waterFill, waterOutline]).mosaic(),
+  {},
+  'Permanent Water (JRC occurrence >=50%)',
   false
 );
 

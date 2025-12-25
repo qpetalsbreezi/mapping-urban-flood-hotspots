@@ -131,6 +131,9 @@ def load_aoi(path: Path) -> ee.Geometry:
         return ee.Geometry.Polygon(coords)
     if geom_type == "MultiPolygon":
         return ee.Geometry.MultiPolygon(coords)
+    if geom_type == "LineString":
+        # Buffer a linestring into a polygon AOI (1 km default)
+        return ee.Geometry.LineString(coords).buffer(1000).bounds()
     raise ValueError(f"Unsupported AOI geometry type: {geom_type}")
 
 

@@ -167,26 +167,52 @@ def match_sentinel1(event_dt: datetime, aoi: ee.Geometry, max_candidates: int) -
 
     times = collection.aggregate_array("system:time_start").getInfo()
     ids = collection.aggregate_array("system:id").getInfo()
+    passes = collection.aggregate_array("orbitProperties_pass").getInfo()
+    rel_orbits = collection.aggregate_array("relativeOrbitNumber_start").getInfo()
+
     entries = []
-    for ts_ms, img_id in zip(times, ids):
+    for ts_ms, img_id, orbit_pass, rel_orbit in zip(times, ids, passes, rel_orbits):
         dt = datetime.utcfromtimestamp(ts_ms / 1000.0)
-        entries.append((dt, img_id))
+        entries.append((dt, img_id, orbit_pass, rel_orbit))
 
-    before_candidates = [ImagerySelection(date=dt, image_id=img_id, offset_days=days_offset(dt, event_dt))
-                         for dt, img_id in entries if dt <= event_dt]
-    after_candidates = [ImagerySelection(date=dt, image_id=img_id, offset_days=days_offset(dt, event_dt))
-                        for dt, img_id in entries if dt >= event_dt]
+    before_candidates = [
+        ImagerySelection(date=dt, image_id=img_id, offset_days=days_offset(dt, event_dt))
+        for dt, img_id, orbit_pass, rel_orbit in entries
+        if dt <= event_dt
+    ]
+    after_candidates_full = [
+        (dt, img_id, orbit_pass, rel_orbit)
+        for dt, img_id, orbit_pass, rel_orbit in entries
+        if dt >= event_dt
+    ]
 
-    def pick_s1(candidates: list[ImagerySelection], reverse: bool) -> Optional[ImagerySelection]:
-        if not candidates:
-            return None
-        # For before we want the latest (closest to event), for after earliest.
-        sorted_candidates = sorted(candidates, key=lambda c: c.offset_days or 0, reverse=reverse)
-        return sorted_candidates[0]
+    # Pick the earliest after-event scene (closest non-negative offset).
+    after_selected: Optional[ImagerySelection] = None
+    after_pass = None
+    after_rel = None
+    if after_candidates_full:
+        after_candidates_full.sort(key=lambda x: (x[0] - event_dt))
+        dt, img_id, orbit_pass, rel_orbit = after_candidates_full[0]
+        after_selected = ImagerySelection(date=dt, image_id=img_id, offset_days=days_offset(dt, event_dt))
+        after_pass, after_rel = orbit_pass, rel_orbit
 
-    before = pick_s1(before_candidates, reverse=True)
-    after = pick_s1(after_candidates, reverse=False)
-    return before, after, len(entries)
+    # Filter before-candidates to the same pass/orbit as the selected after scene when available.
+    matched_before = []
+    if after_pass is not None and after_rel is not None:
+        matched_before = [
+            ImagerySelection(date=dt, image_id=img_id, offset_days=days_offset(dt, event_dt))
+            for dt, img_id, orbit_pass, rel_orbit in entries
+            if dt <= event_dt and orbit_pass == after_pass and rel_orbit == after_rel
+        ]
+
+    if matched_before:
+        matched_before.sort(key=lambda c: c.offset_days or -9999, reverse=True)  # latest (closest) before
+        before_selected = matched_before[0]
+    else:
+        before_candidates.sort(key=lambda c: c.offset_days or -9999, reverse=True)
+        before_selected = before_candidates[0] if before_candidates else None
+
+    return before_selected, after_selected, len(entries)
 
 
 # ---------------------------------------------------------------------------

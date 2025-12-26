@@ -1,458 +1,1785 @@
 /**
- * Raleigh Flood Event Visualization (April 2017)
+ * Flood Event Visualization for Raleigh, NC and Houston, TX
  *
  * Paste this script into the Google Earth Engine Code Editor to inspect
- * Sentinel-1 scenes before and after the flood. AOI coordinates mirror
- * `data/raleigh_aoi.json` (full Raleigh metro flood footprint). Dates and
- * image IDs are curated ahead of time (see `code/gee/list_raleigh_s1_passes.py`
- * and related helpers) so this script focuses purely on visualization.
+ * Sentinel-1/2 and Landsat scenes before and after curated flood events.
+ * AOIs align with `data/raleigh_aoi.json` and `data/houston_aoi.json`.
  */
 
-var outerAOICoords = [
-  [-78.9000, 35.6000],
-  [-78.4000, 35.6000],
-  [-78.4000, 36.1000],
-  [-78.9000, 36.1000],
-  [-78.9000, 35.6000]
-];
-var outerAOI = ee.Geometry.Polygon([outerAOICoords]);
+// ============================================================================
+// USER SETTINGS
+// ============================================================================
+var selectedCity = 'raleigh'; // 'raleigh' or 'houston'
+var selectedEventIndex = 1;   // 1-based index within the chosen city
+var opticalWindowDays = 10;
 
-// Tighten the AOI slightly for visualization (buffer inward by 5 km)
-var focusAOI = outerAOI.buffer(-5000).bounds();
+// City-specific configuration (AOI, zoom, and optional highlight boxes)
+var cityConfig = {
+  raleigh: {
+    outerAOICoords: [
+      [-78.9, 35.6],
+      [-78.4, 35.6],
+      [-78.4, 36.1],
+      [-78.9, 36.1],
+      [-78.9, 35.6]
+    ],
+    focusBuffer: -5000, // tighten AOI for visualization
+    centerZoom: 13,
+    highlightBoxes: [
+      {
+        geom: ee.Geometry.Rectangle({coords: [-78.72, 35.83, -78.68, 35.87], geodesic: false}),
+        label: 'Crabtree focus box',
+        palette: 'yellow'
+      }
+    ],
+    floodLocations: {
+      '755610': [
+        {lat: 35.89, lon: -78.71, desc: 'Begin: Crabtree Valley Mall area'},
+        {lat: 35.82, lon: -78.71, desc: 'End: Crabtree Creek overflow'},
+        {lat: 35.85, lon: -78.70, desc: 'Crabtree Valley Mall (approx)'},
+        {lat: 35.86, lon: -78.68, desc: 'Newton Road near Six Forks Road (approx)'},
+        {lat: 35.88, lon: -78.71, desc: 'Leesville Road & Millbrook Road (approx)'}
+      ],
+      '775032': [
+        {lat: 35.8, lon: -78.61, desc: 'North Raleigh Boulevard near Millbank Street'}
+      ],
+      '775034': [
+        {lat: 35.79, lon: -78.64, desc: 'Peace Street and Capitol Boulevard'}
+      ],
+      '775037': [
+        {lat: 35.8148, lon: -78.6198, desc: 'Atlantic Avenue at Hodges Street'}
+      ],
+      '775029': [
+        {lat: 35.6332, lon: -78.7092, desc: 'Banks Road and Ten Ten Road'}
+      ],
+      '775031': [
+        {lat: 35.7294, lon: -78.6466, desc: 'Gideon Creek Way near Durham Drive'}
+      ],
+      '781167': [
+        {lat: 35.8049, lon: -78.623, desc: 'Wake Forest Road near Georgetown Road'}
+      ],
+      '1029187': [
+        {lat: 35.7864, lon: -78.7353, desc: 'Wolf Creek Circle'}
+      ],
+      '1173317': [
+        {lat: 35.7794, lon: -78.6435, desc: 'Union Station (S West St & W Martin St)'}
+      ],
+      '1208861': [
+        {lat: 35.7742, lon: -78.6469, desc: 'Union Station (West St & Martin St)'}
+      ],
+      '1208432': [
+        {lat: 35.77, lon: -78.73, desc: 'I-440 eastbound (closed)'}
+      ]
+    }
+  },
+  houston: {
+    outerAOICoords: [
+      [-95.6, 29.6],
+      [-95.1, 29.6],
+      [-95.1, 29.9],
+      [-95.6, 29.9],
+      [-95.6, 29.6]
+    ],
+    focusBuffer: -7000,
+    centerZoom: 11,
+    highlightBoxes: [],
+    floodLocations: {}
+  }
+};
 
-// Crabtree Valley Mall focus box (roughly 2 km square) to help zoom on known flooding
-var crabtreeBox = ee.Geometry.Rectangle({
-  coords: [-78.72, 35.83, -78.68, 35.87],
-  geodesic: false
-});
+// Placeholder; replaced below with curated events per city.
+var eventsByCity = {
+  "raleigh": [
+    {
+      "id": "755610",
+      "label": "Raleigh flood 2018-05-21",
+      "sentinel1": {
+        "before": {
+          "date": "2018-05-10",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20180510T231408_20180510T231433_021849_025BA5_EB89"
+        },
+        "after": {
+          "date": "2018-05-22",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20180522T231409_20180522T231434_022024_026137_6DDC"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2018-05-09",
+          "imageId": "COPERNICUS/S2_SR/20180509T155859_20180509T160532_T17SQV",
+          "validFraction": 0.768
+        },
+        "after": {
+          "date": "2018-05-24",
+          "imageId": "COPERNICUS/S2_SR/20180524T160231_20180524T161104_T17SQV",
+          "validFraction": 0.431
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2018-05-12",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_016035_20180512",
+          "validFraction": 0.99
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "775032",
+      "label": "Raleigh flood 2018-07-06",
+      "sentinel1": {
+        "before": {
+          "date": "2018-06-27",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20180627T231411_20180627T231436_022549_027150_2A0E"
+        },
+        "after": {
+          "date": "2018-07-09",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20180709T231411_20180709T231436_022724_02766D_A8A8"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2018-06-28",
+          "imageId": "COPERNICUS/S2_SR/20180628T155819_20180628T160601_T17SQV",
+          "validFraction": 0.238
+        },
+        "after": {
+          "date": "2018-07-08",
+          "imageId": "COPERNICUS/S2_SR/20180708T155819_20180708T161248_T17SQV",
+          "validFraction": 0.769
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2018-06-29",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_016035_20180629",
+          "validFraction": 0.709
+        },
+        "after": {
+          "date": "2018-07-08",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_015035_20180708",
+          "validFraction": 0.851
+        }
+      }
+    },
+    {
+      "id": "775034",
+      "label": "Raleigh flood 2018-07-06",
+      "sentinel1": {
+        "before": {
+          "date": "2018-06-27",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20180627T231411_20180627T231436_022549_027150_2A0E"
+        },
+        "after": {
+          "date": "2018-07-09",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20180709T231411_20180709T231436_022724_02766D_A8A8"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2018-06-28",
+          "imageId": "COPERNICUS/S2_SR/20180628T155819_20180628T160601_T17SQV",
+          "validFraction": 0.238
+        },
+        "after": {
+          "date": "2018-07-08",
+          "imageId": "COPERNICUS/S2_SR/20180708T155819_20180708T161248_T17SQV",
+          "validFraction": 0.769
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2018-06-29",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_016035_20180629",
+          "validFraction": 0.709
+        },
+        "after": {
+          "date": "2018-07-08",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_015035_20180708",
+          "validFraction": 0.851
+        }
+      }
+    },
+    {
+      "id": "775037",
+      "label": "Raleigh flood 2018-07-06",
+      "sentinel1": {
+        "before": {
+          "date": "2018-06-27",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20180627T231411_20180627T231436_022549_027150_2A0E"
+        },
+        "after": {
+          "date": "2018-07-09",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20180709T231411_20180709T231436_022724_02766D_A8A8"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2018-06-28",
+          "imageId": "COPERNICUS/S2_SR/20180628T155819_20180628T160601_T17SQV",
+          "validFraction": 0.238
+        },
+        "after": {
+          "date": "2018-07-08",
+          "imageId": "COPERNICUS/S2_SR/20180708T155819_20180708T161248_T17SQV",
+          "validFraction": 0.769
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2018-06-29",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_016035_20180629",
+          "validFraction": 0.709
+        },
+        "after": {
+          "date": "2018-07-08",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_015035_20180708",
+          "validFraction": 0.851
+        }
+      }
+    },
+    {
+      "id": "775029",
+      "label": "Raleigh flood 2018-07-07",
+      "sentinel1": {
+        "before": {
+          "date": "2018-06-27",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20180627T231411_20180627T231436_022549_027150_2A0E"
+        },
+        "after": {
+          "date": "2018-07-09",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20180709T231411_20180709T231436_022724_02766D_A8A8"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2018-06-28",
+          "imageId": "COPERNICUS/S2_SR/20180628T155819_20180628T160601_T17SQV",
+          "validFraction": 0.238
+        },
+        "after": {
+          "date": "2018-07-08",
+          "imageId": "COPERNICUS/S2_SR/20180708T155819_20180708T161248_T17SQV",
+          "validFraction": 0.769
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2018-06-29",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_016035_20180629",
+          "validFraction": 0.709
+        },
+        "after": {
+          "date": "2018-07-08",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_015035_20180708",
+          "validFraction": 0.851
+        }
+      }
+    },
+    {
+      "id": "775031",
+      "label": "Raleigh flood 2018-07-07",
+      "sentinel1": {
+        "before": {
+          "date": "2018-06-27",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20180627T231411_20180627T231436_022549_027150_2A0E"
+        },
+        "after": {
+          "date": "2018-07-09",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20180709T231411_20180709T231436_022724_02766D_A8A8"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2018-06-28",
+          "imageId": "COPERNICUS/S2_SR/20180628T155819_20180628T160601_T17SQV",
+          "validFraction": 0.238
+        },
+        "after": {
+          "date": "2018-07-08",
+          "imageId": "COPERNICUS/S2_SR/20180708T155819_20180708T161248_T17SQV",
+          "validFraction": 0.769
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2018-06-29",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_016035_20180629",
+          "validFraction": 0.709
+        },
+        "after": {
+          "date": "2018-07-08",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_015035_20180708",
+          "validFraction": 0.851
+        }
+      }
+    },
+    {
+      "id": "1029187",
+      "label": "Raleigh flood 2022-05-23",
+      "sentinel1": {
+        "before": {
+          "date": "2022-05-13",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20220513T231430_20220513T231455_043199_0528C5_5077"
+        },
+        "after": {
+          "date": "2022-05-25",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20220525T231430_20220525T231455_043374_052DF9_09E0"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2022-05-20",
+          "imageId": "COPERNICUS/S2_SR/20220520T154821_20220520T155606_T17SQA",
+          "validFraction": 0.052
+        },
+        "after": {
+          "date": "2022-05-23",
+          "imageId": "COPERNICUS/S2_SR/20220523T155831_20220523T160634_T17SQV",
+          "validFraction": 0.181
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2022-05-16",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_015035_20220516",
+          "validFraction": 0.016
+        },
+        "after": {
+          "date": "2022-05-23",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_016035_20220523",
+          "validFraction": 0.309
+        }
+      }
+    },
+    {
+      "id": "1173317",
+      "label": "Raleigh flood 2024-05-25",
+      "sentinel1": {
+        "before": {
+          "date": "2024-05-14",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20240514T231439_20240514T231504_053874_068C4B_5E79"
+        },
+        "after": {
+          "date": "2024-05-26",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20240526T231440_20240526T231505_054049_069253_4EF3"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2024-05-19",
+          "imageId": "COPERNICUS/S2_SR/20240519T154941_20240519T155829_T17SQA",
+          "validFraction": 0.0
+        },
+        "after": {
+          "date": "2024-05-29",
+          "imageId": "COPERNICUS/S2_SR/20240529T154941_20240529T155815_T17SQV",
+          "validFraction": 0.594
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2024-05-21",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_015035_20240521",
+          "validFraction": 0.828
+        },
+        "after": {
+          "date": "2024-05-28",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_016035_20240528",
+          "validFraction": 0.702
+        }
+      }
+    },
+    {
+      "id": "1208861",
+      "label": "Raleigh flood 2024-08-03",
+      "sentinel1": {
+        "before": null,
+        "after": {
+          "date": "2024-08-06",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20240806T231437_20240806T231502_055099_06B6C2_779E"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2024-07-28",
+          "imageId": "COPERNICUS/S2_SR/20240728T154941_20240728T160102_T17SQV",
+          "validFraction": 0.662
+        },
+        "after": null
+      },
+      "landsat": {
+        "before": {
+          "date": "2024-07-31",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_016035_20240731",
+          "validFraction": 1.0
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "1208432",
+      "label": "Raleigh flood 2024-08-04",
+      "sentinel1": {
+        "before": null,
+        "after": {
+          "date": "2024-08-06",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20240806T231437_20240806T231502_055099_06B6C2_779E"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2024-07-28",
+          "imageId": "COPERNICUS/S2_SR/20240728T154941_20240728T160102_T17SQV",
+          "validFraction": 0.662
+        },
+        "after": null
+      },
+      "landsat": {
+        "before": {
+          "date": "2024-07-31",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_016035_20240731",
+          "validFraction": 1.0
+        },
+        "after": null
+      }
+    }
+  ],
+  "houston": [
+    {
+      "id": "579534",
+      "label": "Houston flood 2015-05-30",
+      "sentinel1": {
+        "before": null,
+        "after": {
+          "date": "2015-05-31",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20150531T122237_20150531T122307_006165_008054_86FA"
+        }
+      },
+      "sentinel2": {
+        "before": null,
+        "after": null
+      },
+      "landsat": {
+        "before": {
+          "date": "2015-05-26",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20150526",
+          "validFraction": 0.201
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "604968",
+      "label": "Houston flood 2015-10-31",
+      "sentinel1": {
+        "before": {
+          "date": "2015-10-22",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20151022T122242_20151022T122312_008265_00BA50_0708"
+        },
+        "after": {
+          "date": "2015-11-03",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20151103T122242_20151103T122312_008440_00BEDF_2FDA"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2015-10-22",
+          "imageId": "COPERNICUS/S2_SR/20151022T170012_20151022T170014_T15RTP",
+          "validFraction": 0.049
+        },
+        "after": null
+      },
+      "landsat": {
+        "before": {
+          "date": "2015-10-26",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_025039_20151026",
+          "validFraction": 0.675
+        },
+        "after": {
+          "date": "2015-11-02",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20151102",
+          "validFraction": 0.021
+        }
+      }
+    },
+    {
+      "id": "620705",
+      "label": "Houston flood 2016-03-18",
+      "sentinel1": {
+        "before": {
+          "date": "2016-03-14",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20160314T122234_20160314T122304_010365_00F5C2_BB20"
+        },
+        "after": {
+          "date": "2016-03-21",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SSV_20160321T121433_20160321T121458_010467_00F895_08E0"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2016-03-13",
+          "imageId": "COPERNICUS/S2_SR/20160313T171512_20160313T171515_T15RTN",
+          "validFraction": 0.639
+        },
+        "after": {
+          "date": "2016-03-20",
+          "imageId": "COPERNICUS/S2_SR/20160320T165302_20160320T170440_T15RTN",
+          "validFraction": 0.539
+        }
+      },
+      "landsat": {
+        "before": null,
+        "after": {
+          "date": "2016-03-18",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_025039_20160318",
+          "validFraction": 0.141
+        }
+      }
+    },
+    {
+      "id": "675235",
+      "label": "Houston flood 2017-01-18",
+      "sentinel1": {
+        "before": {
+          "date": "2017-01-08",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170108T001813_20170108T001842_014733_017FB8_BB4E"
+        },
+        "after": {
+          "date": "2017-01-20",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170120T001812_20170120T001841_014908_018538_5822"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2017-01-07",
+          "imageId": "COPERNICUS/S2_SR/20170107T170701_20170107T170831_T15RTN",
+          "validFraction": 0.676
+        },
+        "after": null
+      },
+      "landsat": {
+        "before": {
+          "date": "2017-01-16",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_025039_20170116",
+          "validFraction": 0.677
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "675098",
+      "label": "Houston flood 2017-01-20",
+      "sentinel1": {
+        "before": {
+          "date": "2017-01-08",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170108T001813_20170108T001842_014733_017FB8_BB4E"
+        },
+        "after": {
+          "date": "2017-01-20",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170120T001812_20170120T001841_014908_018538_5822"
+        }
+      },
+      "sentinel2": {
+        "before": null,
+        "after": {
+          "date": "2017-01-24",
+          "imageId": "COPERNICUS/S2_SR/20170124T165551_20170124T165554_T15RTN",
+          "validFraction": 0.424
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2017-01-16",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_025039_20170116",
+          "validFraction": 0.677
+        },
+        "after": {
+          "date": "2017-01-23",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170123",
+          "validFraction": 0.26
+        }
+      }
+    },
+    {
+      "id": "710731",
+      "label": "Houston flood 2017-06-04",
+      "sentinel1": {
+        "before": {
+          "date": "2017-05-25",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170525T002614_20170525T002639_016731_01BC9B_8DEE"
+        },
+        "after": {
+          "date": "2017-06-06",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170606T002615_20170606T002640_016906_01C211_F481"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2017-05-24",
+          "imageId": "COPERNICUS/S2_SR/20170524T170531_20170524T170526_T15RTN",
+          "validFraction": 0.559
+        },
+        "after": {
+          "date": "2017-06-06",
+          "imageId": "COPERNICUS/S2_SR/20170606T171521_20170606T171521_T15RTP",
+          "validFraction": 0.313
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2017-05-24",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_025039_20170524",
+          "validFraction": 0.999
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "710726",
+      "label": "Houston flood 2017-06-24",
+      "sentinel1": {
+        "before": {
+          "date": "2017-06-13",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170613T001820_20170613T001845_017008_01C531_1EE5"
+        },
+        "after": {
+          "date": "2017-06-25",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170625T001820_20170625T001845_017183_01CA88_6F42"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2017-06-16",
+          "imageId": "COPERNICUS/S2_SR/20170616T170311_20170616T171505_T15RTN",
+          "validFraction": 0.476
+        },
+        "after": {
+          "date": "2017-06-26",
+          "imageId": "COPERNICUS/S2_SR/20170626T171521_20170626T171518_T15RTP",
+          "validFraction": 0.354
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2017-06-16",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170616",
+          "validFraction": 0.176
+        },
+        "after": {
+          "date": "2017-06-25",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_025039_20170625",
+          "validFraction": 0.303
+        }
+      }
+    },
+    {
+      "id": "710727",
+      "label": "Houston flood 2017-06-25",
+      "sentinel1": {
+        "before": {
+          "date": "2017-06-13",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170613T001820_20170613T001845_017008_01C531_1EE5"
+        },
+        "after": {
+          "date": "2017-06-25",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170625T001820_20170625T001845_017183_01CA88_6F42"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2017-06-16",
+          "imageId": "COPERNICUS/S2_SR/20170616T170311_20170616T171505_T15RTN",
+          "validFraction": 0.476
+        },
+        "after": {
+          "date": "2017-06-26",
+          "imageId": "COPERNICUS/S2_SR/20170626T171521_20170626T171518_T15RTP",
+          "validFraction": 0.354
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2017-06-16",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170616",
+          "validFraction": 0.176
+        },
+        "after": {
+          "date": "2017-06-25",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_025039_20170625",
+          "validFraction": 0.303
+        }
+      }
+    },
+    {
+      "id": "714368",
+      "label": "Houston flood 2017-07-09",
+      "sentinel1": {
+        "before": {
+          "date": "2017-06-30",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170630T002617_20170630T002642_017256_01CCBA_1392"
+        },
+        "after": {
+          "date": "2017-07-12",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170712T002617_20170712T002642_017431_01D208_BF55"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2017-07-03",
+          "imageId": "COPERNICUS/S2_SR/20170703T170521_20170703T170522_T15RTN",
+          "validFraction": 0.365
+        },
+        "after": {
+          "date": "2017-07-11",
+          "imageId": "COPERNICUS/S2_SR/20170711T171519_20170711T171520_T15RTP",
+          "validFraction": 0.312
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2017-07-02",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170702",
+          "validFraction": 0.107
+        },
+        "after": {
+          "date": "2017-07-11",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_025039_20170711",
+          "validFraction": 0.493
+        }
+      }
+    },
+    {
+      "id": "720858",
+      "label": "Houston flood 2017-08-26",
+      "sentinel1": {
+        "before": {
+          "date": "2017-08-24",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170824T122248_20170824T122318_018065_01E54E_A87C"
+        },
+        "after": {
+          "date": "2017-08-29",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170829T002620_20170829T002645_018131_01E74D_D734"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2017-08-15",
+          "imageId": "COPERNICUS/S2_SR/20170815T165851_20170815T171519_T15RTP",
+          "validFraction": 0.458
+        },
+        "after": {
+          "date": "2017-08-30",
+          "imageId": "COPERNICUS/S2_SR/20170830T165849_20170830T170423_T15RTN",
+          "validFraction": 0.032
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2017-08-19",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170819",
+          "validFraction": 0.149
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "720860",
+      "label": "Houston flood 2017-08-26",
+      "sentinel1": {
+        "before": {
+          "date": "2017-08-24",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170824T122248_20170824T122318_018065_01E54E_A87C"
+        },
+        "after": {
+          "date": "2017-08-29",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170829T002620_20170829T002645_018131_01E74D_D734"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2017-08-15",
+          "imageId": "COPERNICUS/S2_SR/20170815T165851_20170815T171519_T15RTP",
+          "validFraction": 0.458
+        },
+        "after": {
+          "date": "2017-08-30",
+          "imageId": "COPERNICUS/S2_SR/20170830T165849_20170830T170423_T15RTN",
+          "validFraction": 0.032
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2017-08-19",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170819",
+          "validFraction": 0.149
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "720861",
+      "label": "Houston flood 2017-08-26",
+      "sentinel1": {
+        "before": {
+          "date": "2017-08-24",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170824T122248_20170824T122318_018065_01E54E_A87C"
+        },
+        "after": {
+          "date": "2017-08-29",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170829T002620_20170829T002645_018131_01E74D_D734"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2017-08-15",
+          "imageId": "COPERNICUS/S2_SR/20170815T165851_20170815T171519_T15RTP",
+          "validFraction": 0.458
+        },
+        "after": {
+          "date": "2017-08-30",
+          "imageId": "COPERNICUS/S2_SR/20170830T165849_20170830T170423_T15RTN",
+          "validFraction": 0.032
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2017-08-19",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170819",
+          "validFraction": 0.149
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "720867",
+      "label": "Houston flood 2017-08-26",
+      "sentinel1": {
+        "before": {
+          "date": "2017-08-24",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170824T122248_20170824T122318_018065_01E54E_A87C"
+        },
+        "after": {
+          "date": "2017-08-29",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170829T002620_20170829T002645_018131_01E74D_D734"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2017-08-15",
+          "imageId": "COPERNICUS/S2_SR/20170815T165851_20170815T171519_T15RTP",
+          "validFraction": 0.458
+        },
+        "after": {
+          "date": "2017-08-30",
+          "imageId": "COPERNICUS/S2_SR/20170830T165849_20170830T170423_T15RTN",
+          "validFraction": 0.032
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2017-08-19",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170819",
+          "validFraction": 0.149
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "720869",
+      "label": "Houston flood 2017-08-26",
+      "sentinel1": {
+        "before": {
+          "date": "2017-08-24",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170824T122248_20170824T122318_018065_01E54E_A87C"
+        },
+        "after": {
+          "date": "2017-08-29",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170829T002620_20170829T002645_018131_01E74D_D734"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2017-08-15",
+          "imageId": "COPERNICUS/S2_SR/20170815T165851_20170815T171519_T15RTP",
+          "validFraction": 0.458
+        },
+        "after": {
+          "date": "2017-08-30",
+          "imageId": "COPERNICUS/S2_SR/20170830T165849_20170830T170423_T15RTN",
+          "validFraction": 0.032
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2017-08-19",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170819",
+          "validFraction": 0.149
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "720873",
+      "label": "Houston flood 2017-08-26",
+      "sentinel1": {
+        "before": {
+          "date": "2017-08-24",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170824T122248_20170824T122318_018065_01E54E_A87C"
+        },
+        "after": {
+          "date": "2017-08-29",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170829T002620_20170829T002645_018131_01E74D_D734"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2017-08-15",
+          "imageId": "COPERNICUS/S2_SR/20170815T165851_20170815T171519_T15RTP",
+          "validFraction": 0.458
+        },
+        "after": {
+          "date": "2017-08-30",
+          "imageId": "COPERNICUS/S2_SR/20170830T165849_20170830T170423_T15RTN",
+          "validFraction": 0.032
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2017-08-19",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170819",
+          "validFraction": 0.149
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "721084",
+      "label": "Houston flood 2017-08-27",
+      "sentinel1": {
+        "before": {
+          "date": "2017-08-24",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170824T122248_20170824T122318_018065_01E54E_A87C"
+        },
+        "after": {
+          "date": "2017-08-29",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170829T002620_20170829T002645_018131_01E74D_D734"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2017-08-15",
+          "imageId": "COPERNICUS/S2_SR/20170815T165851_20170815T171519_T15RTP",
+          "validFraction": 0.458
+        },
+        "after": {
+          "date": "2017-08-30",
+          "imageId": "COPERNICUS/S2_SR/20170830T165849_20170830T170423_T15RTN",
+          "validFraction": 0.032
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2017-08-19",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170819",
+          "validFraction": 0.149
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "721085",
+      "label": "Houston flood 2017-08-27",
+      "sentinel1": {
+        "before": {
+          "date": "2017-08-24",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170824T122248_20170824T122318_018065_01E54E_A87C"
+        },
+        "after": {
+          "date": "2017-08-29",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170829T002620_20170829T002645_018131_01E74D_D734"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2017-08-15",
+          "imageId": "COPERNICUS/S2_SR/20170815T165851_20170815T171519_T15RTP",
+          "validFraction": 0.458
+        },
+        "after": {
+          "date": "2017-08-30",
+          "imageId": "COPERNICUS/S2_SR/20170830T165849_20170830T170423_T15RTN",
+          "validFraction": 0.032
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2017-08-19",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170819",
+          "validFraction": 0.149
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "721091",
+      "label": "Houston flood 2017-08-27",
+      "sentinel1": {
+        "before": {
+          "date": "2017-08-24",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170824T122248_20170824T122318_018065_01E54E_A87C"
+        },
+        "after": {
+          "date": "2017-08-29",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170829T002620_20170829T002645_018131_01E74D_D734"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2017-08-15",
+          "imageId": "COPERNICUS/S2_SR/20170815T165851_20170815T171519_T15RTP",
+          "validFraction": 0.458
+        },
+        "after": {
+          "date": "2017-08-30",
+          "imageId": "COPERNICUS/S2_SR/20170830T165849_20170830T170423_T15RTN",
+          "validFraction": 0.032
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2017-08-19",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170819",
+          "validFraction": 0.149
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "721096",
+      "label": "Houston flood 2017-08-28",
+      "sentinel1": {
+        "before": {
+          "date": "2017-08-24",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170824T122248_20170824T122318_018065_01E54E_A87C"
+        },
+        "after": {
+          "date": "2017-08-29",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170829T002620_20170829T002645_018131_01E74D_D734"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2017-08-17",
+          "imageId": "COPERNICUS/S2_SR/20170817T164859_20170817T165603_T15RTN",
+          "validFraction": 0.446
+        },
+        "after": {
+          "date": "2017-09-01",
+          "imageId": "COPERNICUS/S2_SR/20170901T170521_20170901T170523_T15RTN",
+          "validFraction": 0.324
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2017-08-19",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170819",
+          "validFraction": 0.149
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "721101",
+      "label": "Houston flood 2017-08-28",
+      "sentinel1": {
+        "before": {
+          "date": "2017-08-24",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170824T122248_20170824T122318_018065_01E54E_A87C"
+        },
+        "after": {
+          "date": "2017-08-29",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170829T002620_20170829T002645_018131_01E74D_D734"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2017-08-17",
+          "imageId": "COPERNICUS/S2_SR/20170817T164859_20170817T165603_T15RTN",
+          "validFraction": 0.446
+        },
+        "after": {
+          "date": "2017-09-01",
+          "imageId": "COPERNICUS/S2_SR/20170901T170521_20170901T170523_T15RTN",
+          "validFraction": 0.324
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2017-08-19",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170819",
+          "validFraction": 0.149
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "721136",
+      "label": "Houston flood 2017-08-29",
+      "sentinel1": {
+        "before": {
+          "date": "2017-08-24",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170824T122248_20170824T122318_018065_01E54E_A87C"
+        },
+        "after": {
+          "date": "2017-08-29",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170829T002620_20170829T002645_018131_01E74D_D734"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2017-08-17",
+          "imageId": "COPERNICUS/S2_SR/20170817T164859_20170817T165603_T15RTN",
+          "validFraction": 0.446
+        },
+        "after": {
+          "date": "2017-09-01",
+          "imageId": "COPERNICUS/S2_SR/20170901T170521_20170901T170523_T15RTN",
+          "validFraction": 0.324
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2017-08-19",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170819",
+          "validFraction": 0.149
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "757973",
+      "label": "Houston flood 2018-07-04",
+      "sentinel1": {
+        "before": {
+          "date": "2018-06-25",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20180625T002623_20180625T002648_022506_027003_2E1D"
+        },
+        "after": {
+          "date": "2018-07-07",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20180707T002623_20180707T002648_022681_02751D_506E"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2018-07-01",
+          "imageId": "COPERNICUS/S2_SR/20180701T165851_20180701T171438_T15RTN",
+          "validFraction": 0.577
+        },
+        "after": {
+          "date": "2018-07-06",
+          "imageId": "COPERNICUS/S2_SR/20180706T165849_20180706T170955_T15RTN",
+          "validFraction": 0.63
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2018-06-28",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_025039_20180628",
+          "validFraction": 0.626
+        },
+        "after": {
+          "date": "2018-07-05",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20180705",
+          "validFraction": 0.14
+        }
+      }
+    },
+    {
+      "id": "797758",
+      "label": "Houston flood 2018-12-08",
+      "sentinel1": {
+        "before": {
+          "date": "2018-12-05",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20181205T122255_20181205T122325_024890_02BDBF_F260"
+        },
+        "after": {
+          "date": "2018-12-11",
+          "imageId": "COPERNICUS/S1_GRD/S1B_IW_GRDH_1SDV_20181211T122213_20181211T122243_013994_019F7E_D44C"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2018-12-03",
+          "imageId": "COPERNICUS/S2_SR/20181203T170659_20181203T170958_T15RTN",
+          "validFraction": 0.686
+        },
+        "after": {
+          "date": "2018-12-10",
+          "imageId": "COPERNICUS/S2_SR/20181210T165659_20181210T165847_T15RTN",
+          "validFraction": 0.554
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2018-12-05",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_025039_20181205",
+          "validFraction": 0.998
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "830461",
+      "label": "Houston flood 2019-05-09",
+      "sentinel1": {
+        "before": {
+          "date": "2019-05-04",
+          "imageId": "COPERNICUS/S1_GRD/S1B_IW_GRDH_1SDV_20190504T122213_20190504T122242_016094_01E464_F28C"
+        },
+        "after": {
+          "date": "2019-05-10",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20190510T001830_20190510T001855_027158_030FB5_A959"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2019-05-04",
+          "imageId": "COPERNICUS/S2_SR/20190504T164901_20190504T170412_T15RTN",
+          "validFraction": 0.439
+        },
+        "after": {
+          "date": "2019-05-09",
+          "imageId": "COPERNICUS/S2_SR/20190509T164849_20190509T170403_T15RTP",
+          "validFraction": 0.003
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2019-04-28",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_025039_20190428",
+          "validFraction": 0.362
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "830464",
+      "label": "Houston flood 2019-05-09",
+      "sentinel1": {
+        "before": {
+          "date": "2019-05-04",
+          "imageId": "COPERNICUS/S1_GRD/S1B_IW_GRDH_1SDV_20190504T122213_20190504T122242_016094_01E464_F28C"
+        },
+        "after": {
+          "date": "2019-05-10",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20190510T001830_20190510T001855_027158_030FB5_A959"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2019-05-04",
+          "imageId": "COPERNICUS/S2_SR/20190504T164901_20190504T170412_T15RTN",
+          "validFraction": 0.439
+        },
+        "after": {
+          "date": "2019-05-09",
+          "imageId": "COPERNICUS/S2_SR/20190509T164849_20190509T170403_T15RTP",
+          "validFraction": 0.003
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2019-04-28",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_025039_20190428",
+          "validFraction": 0.362
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "853617",
+      "label": "Houston flood 2019-08-23",
+      "sentinel1": {
+        "before": {
+          "date": "2019-08-14",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20190814T001836_20190814T001901_028558_033ACC_2A62"
+        },
+        "after": {
+          "date": "2019-08-26",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20190826T001837_20190826T001902_028733_0340D4_1130"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2019-08-15",
+          "imageId": "COPERNICUS/S2_SR/20190815T165901_20190815T170855_T15RTP",
+          "validFraction": 0.327
+        },
+        "after": {
+          "date": "2019-08-27",
+          "imageId": "COPERNICUS/S2_SR/20190827T164849_20190827T165942_T15RTN",
+          "validFraction": 0.262
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2019-08-18",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_025039_20190818",
+          "validFraction": 0.272
+        },
+        "after": {
+          "date": "2019-08-25",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20190825",
+          "validFraction": 0.127
+        }
+      }
+    },
+    {
+      "id": "857803",
+      "label": "Houston flood 2019-09-18",
+      "sentinel1": {
+        "before": {
+          "date": "2019-09-07",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20190907T001837_20190907T001902_028908_0346F0_99F7"
+        },
+        "after": {
+          "date": "2019-09-19",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20190919T001837_20190919T001902_029083_034D00_7C4E"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2019-09-14",
+          "imageId": "COPERNICUS/S2_SR/20190914T165921_20190914T170704_T15RTN",
+          "validFraction": 0.673
+        },
+        "after": {
+          "date": "2019-09-21",
+          "imageId": "COPERNICUS/S2_SR/20190921T165001_20190921T170157_T15RTN",
+          "validFraction": 0.239
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2019-09-10",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20190910",
+          "validFraction": 0.135
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "858108",
+      "label": "Houston flood 2019-09-19",
+      "sentinel1": {
+        "before": {
+          "date": "2019-09-07",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20190907T001837_20190907T001902_028908_0346F0_99F7"
+        },
+        "after": {
+          "date": "2019-09-19",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20190919T001837_20190919T001902_029083_034D00_7C4E"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2019-09-14",
+          "imageId": "COPERNICUS/S2_SR/20190914T165921_20190914T170704_T15RTN",
+          "validFraction": 0.673
+        },
+        "after": {
+          "date": "2019-09-21",
+          "imageId": "COPERNICUS/S2_SR/20190921T165001_20190921T170157_T15RTN",
+          "validFraction": 0.239
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2019-09-10",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20190910",
+          "validFraction": 0.135
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "858116",
+      "label": "Houston flood 2019-09-19",
+      "sentinel1": {
+        "before": {
+          "date": "2019-09-07",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20190907T001837_20190907T001902_028908_0346F0_99F7"
+        },
+        "after": {
+          "date": "2019-09-19",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20190919T001837_20190919T001902_029083_034D00_7C4E"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2019-09-14",
+          "imageId": "COPERNICUS/S2_SR/20190914T165921_20190914T170704_T15RTN",
+          "validFraction": 0.673
+        },
+        "after": {
+          "date": "2019-09-21",
+          "imageId": "COPERNICUS/S2_SR/20190921T165001_20190921T170157_T15RTN",
+          "validFraction": 0.239
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2019-09-10",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20190910",
+          "validFraction": 0.135
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "858117",
+      "label": "Houston flood 2019-09-19",
+      "sentinel1": {
+        "before": {
+          "date": "2019-09-07",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20190907T001837_20190907T001902_028908_0346F0_99F7"
+        },
+        "after": {
+          "date": "2019-09-19",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20190919T001837_20190919T001902_029083_034D00_7C4E"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2019-09-14",
+          "imageId": "COPERNICUS/S2_SR/20190914T165921_20190914T170704_T15RTN",
+          "validFraction": 0.673
+        },
+        "after": {
+          "date": "2019-09-21",
+          "imageId": "COPERNICUS/S2_SR/20190921T165001_20190921T170157_T15RTN",
+          "validFraction": 0.239
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2019-09-10",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20190910",
+          "validFraction": 0.135
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "869176",
+      "label": "Houston flood 2019-09-19",
+      "sentinel1": {
+        "before": {
+          "date": "2019-09-07",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20190907T001837_20190907T001902_028908_0346F0_99F7"
+        },
+        "after": {
+          "date": "2019-09-19",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20190919T001837_20190919T001902_029083_034D00_7C4E"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2019-09-14",
+          "imageId": "COPERNICUS/S2_SR/20190914T165921_20190914T170704_T15RTN",
+          "validFraction": 0.673
+        },
+        "after": {
+          "date": "2019-09-21",
+          "imageId": "COPERNICUS/S2_SR/20190921T165001_20190921T170157_T15RTN",
+          "validFraction": 0.239
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2019-09-10",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20190910",
+          "validFraction": 0.135
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "899524",
+      "label": "Houston flood 2020-06-25",
+      "sentinel1": {
+        "before": {
+          "date": "2020-06-14",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20200614T002635_20200614T002700_033006_03D2B2_9749"
+        },
+        "after": {
+          "date": "2020-06-26",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20200626T002636_20200626T002701_033181_03D804_3ED2"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2020-06-17",
+          "imageId": "COPERNICUS/S2_SR/20200617T164901_20200617T170013_T15RTN",
+          "validFraction": 0.391
+        },
+        "after": {
+          "date": "2020-06-27",
+          "imageId": "COPERNICUS/S2_SR/20200627T164901_20200627T170048_T15RTP",
+          "validFraction": 0.0
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2020-06-17",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_025039_20200617",
+          "validFraction": 0.805
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "963117",
+      "label": "Houston flood 2021-06-21",
+      "sentinel1": {
+        "before": {
+          "date": "2021-06-09",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20210609T002640_20210609T002705_038256_0483BB_7601"
+        },
+        "after": {
+          "date": "2021-06-21",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20210621T002641_20210621T002706_038431_0488F1_75AA"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2021-06-17",
+          "imageId": "COPERNICUS/S2_SR/20210617T164839_20210617T170159_T15RTP",
+          "validFraction": 0.407
+        },
+        "after": {
+          "date": "2021-06-25",
+          "imageId": "COPERNICUS/S2_SR/20210625T165851_20210625T170701_T15RTN",
+          "validFraction": 0.263
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2021-06-11",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20210611",
+          "validFraction": 0.183
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "1004355",
+      "label": "Houston flood 2022-01-09",
+      "sentinel1": {
+        "before": {
+          "date": "2021-12-30",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20211230T002644_20211230T002709_041231_04E66D_5F0B"
+        },
+        "after": {
+          "date": "2022-01-11",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20220111T002644_20220111T002709_041406_04EC59_F1CD"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2022-01-03",
+          "imageId": "COPERNICUS/S2_SR/20220103T165709_20220103T170107_T15RTN",
+          "validFraction": 0.542
+        },
+        "after": {
+          "date": "2022-01-13",
+          "imageId": "COPERNICUS/S2_SR/20220113T165639_20220113T170031_T15RTN",
+          "validFraction": 0.549
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2022-01-05",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20220105",
+          "validFraction": 0.287
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "1004356",
+      "label": "Houston flood 2022-01-09",
+      "sentinel1": {
+        "before": {
+          "date": "2021-12-30",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20211230T002644_20211230T002709_041231_04E66D_5F0B"
+        },
+        "after": {
+          "date": "2022-01-11",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20220111T002644_20220111T002709_041406_04EC59_F1CD"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2022-01-03",
+          "imageId": "COPERNICUS/S2_SR/20220103T165709_20220103T170107_T15RTN",
+          "validFraction": 0.542
+        },
+        "after": {
+          "date": "2022-01-13",
+          "imageId": "COPERNICUS/S2_SR/20220113T165639_20220113T170031_T15RTN",
+          "validFraction": 0.549
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2022-01-05",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20220105",
+          "validFraction": 0.287
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "1004366",
+      "label": "Houston flood 2022-01-09",
+      "sentinel1": {
+        "before": {
+          "date": "2021-12-30",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20211230T002644_20211230T002709_041231_04E66D_5F0B"
+        },
+        "after": {
+          "date": "2022-01-11",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20220111T002644_20220111T002709_041406_04EC59_F1CD"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2022-01-03",
+          "imageId": "COPERNICUS/S2_SR/20220103T165709_20220103T170107_T15RTN",
+          "validFraction": 0.542
+        },
+        "after": {
+          "date": "2022-01-13",
+          "imageId": "COPERNICUS/S2_SR/20220113T165639_20220113T170031_T15RTN",
+          "validFraction": 0.549
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2022-01-05",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20220105",
+          "validFraction": 0.287
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "1004373",
+      "label": "Houston flood 2022-01-09",
+      "sentinel1": {
+        "before": {
+          "date": "2021-12-30",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20211230T002644_20211230T002709_041231_04E66D_5F0B"
+        },
+        "after": {
+          "date": "2022-01-11",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20220111T002644_20220111T002709_041406_04EC59_F1CD"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2022-01-03",
+          "imageId": "COPERNICUS/S2_SR/20220103T165709_20220103T170107_T15RTN",
+          "validFraction": 0.542
+        },
+        "after": {
+          "date": "2022-01-13",
+          "imageId": "COPERNICUS/S2_SR/20220113T165639_20220113T170031_T15RTN",
+          "validFraction": 0.549
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2022-01-05",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20220105",
+          "validFraction": 0.287
+        },
+        "after": null
+      }
+    },
+    {
+      "id": "1004376",
+      "label": "Houston flood 2022-01-09",
+      "sentinel1": {
+        "before": {
+          "date": "2021-12-30",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20211230T002644_20211230T002709_041231_04E66D_5F0B"
+        },
+        "after": {
+          "date": "2022-01-11",
+          "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20220111T002644_20220111T002709_041406_04EC59_F1CD"
+        }
+      },
+      "sentinel2": {
+        "before": {
+          "date": "2022-01-03",
+          "imageId": "COPERNICUS/S2_SR/20220103T165709_20220103T170107_T15RTN",
+          "validFraction": 0.542
+        },
+        "after": {
+          "date": "2022-01-13",
+          "imageId": "COPERNICUS/S2_SR/20220113T165639_20220113T170031_T15RTN",
+          "validFraction": 0.549
+        }
+      },
+      "landsat": {
+        "before": {
+          "date": "2022-01-05",
+          "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20220105",
+          "validFraction": 0.287
+        },
+        "after": null
+      }
+    }
+  ]
+};
 
-// Clear previous layers and zoom to the focus area
+// Helper to build AOI from config
+function buildFocusAOI(cityKey) {
+  var cfg = cityConfig[cityKey];
+  var outer = ee.Geometry.Polygon([cfg.outerAOICoords]);
+  return cfg.focusBuffer ? outer.buffer(cfg.focusBuffer).bounds() : outer;
+}
+
+var focusAOI = buildFocusAOI(selectedCity);
 Map.clear();
-Map.centerObject(focusAOI, 13);
+Map.centerObject(focusAOI, cityConfig[selectedCity].centerZoom);
 
-// ============================================================================
-// EVENT SELECTION - Change this number (1-10) to view different events
-// ============================================================================
-var selectedEventIndex = 1; // 1-based index (1 = first event, 10 = last event)
+var events = eventsByCity[selectedCity];
+if (!events || events.length === 0) {
+  throw new Error('No curated events found for city: ' + selectedCity);
+}
 
 // Sentinel-1 visualization stretch (VV polarization)
 var radarVis = {min: -20, max: 0};
-var opticalWindowDays = 10;
 var s2Vis = {bands: ['B4', 'B3', 'B2'], min: 0.04, max: 0.25};
 var landsatVis = {bands: ['red', 'green', 'blue'], min: 0.03, max: 0.22};
 // Note: All layers are loaded but unchecked by default (except AOI and flood markers)
 // You can toggle them on/off in the layers panel without reloading
 
-// Catalog of vetted Raleigh flood events with Sentinel-1 coverage
-var events = [
-  {
-    id: '755610',
-    label: 'Crabtree flooding (May 2018)',
-    sentinel1: {
-      before: {
-        date: '2018-05-10',
-        imageId: 'S1A_IW_GRDH_1SDV_20180510T231408_20180510T231433_021849_025BA5_EB89'
-      },
-      after: {
-        date: '2018-05-22',
-        imageId: 'S1A_IW_GRDH_1SDV_20180522T231409_20180522T231434_022024_026137_6DDC'
-      }
-    },
-    sentinel2: {
-      before: {
-        date: '2018-05-09',
-        imageId: 'COPERNICUS/S2_SR/20180509T155859_20180509T160532_T17SQV',
-        validFraction: 0.768
-      },
-      after: {
-        date: '2018-05-24',
-        imageId: 'COPERNICUS/S2_SR/20180524T160231_20180524T161104_T17SQV',
-        validFraction: 0.431
-      }
-    },
-    landsat: {
-      before: {
-        date: '2018-05-12',
-        imageId: 'LANDSAT/LC08/C02/T1_L2/LC08_016035_20180512',
-        validFraction: 0.99
-      },
-      after: null
-    }
-  },
-  {
-    id: '775029',
-    label: 'Urban flooding (July 7, 2018 – event A)',
-    sentinel1: {
-      before: {
-        date: '2018-06-27',
-        imageId: 'S1A_IW_GRDH_1SDV_20180627T231411_20180627T231436_022549_027150_2A0E'
-      },
-      after: {
-        date: '2018-07-09',
-        imageId: 'S1A_IW_GRDH_1SDV_20180709T231411_20180709T231436_022724_02766D_A8A8'
-      }
-    },
-    sentinel2: {
-      before: {
-        date: '2018-06-28',
-        imageId: 'COPERNICUS/S2_SR/20180628T155819_20180628T160601_T17SQV',
-        validFraction: 0.238
-      },
-      after: {
-        date: '2018-07-08',
-        imageId: 'COPERNICUS/S2_SR/20180708T155819_20180708T161248_T17SQV',
-        validFraction: 0.769
-      }
-    },
-    landsat: {
-      before: {
-        date: '2018-06-29',
-        imageId: 'LANDSAT/LC08/C02/T1_L2/LC08_016035_20180629',
-        validFraction: 0.709
-      },
-      after: {
-        date: '2018-07-08',
-        imageId: 'LANDSAT/LC08/C02/T1_L2/LC08_015035_20180708',
-        validFraction: 0.851
-      }
-    }
-  },
-  {
-    id: '775031',
-    label: 'Urban flooding (July 7, 2018 – event B)',
-    sentinel1: {
-      before: {
-        date: '2018-06-27',
-        imageId: 'S1A_IW_GRDH_1SDV_20180627T231411_20180627T231436_022549_027150_2A0E'
-      },
-      after: {
-        date: '2018-07-09',
-        imageId: 'S1A_IW_GRDH_1SDV_20180709T231411_20180709T231436_022724_02766D_A8A8'
-      }
-    },
-    sentinel2: {
-      before: {
-        date: '2018-06-28',
-        imageId: 'COPERNICUS/S2_SR/20180628T155819_20180628T160601_T17SQV',
-        validFraction: 0.238
-      },
-      after: {
-        date: '2018-07-08',
-        imageId: 'COPERNICUS/S2_SR/20180708T155819_20180708T161248_T17SQV',
-        validFraction: 0.769
-      }
-    },
-    landsat: {
-      before: {
-        date: '2018-06-29',
-        imageId: 'LANDSAT/LC08/C02/T1_L2/LC08_016035_20180629',
-        validFraction: 0.709
-      },
-      after: {
-        date: '2018-07-08',
-        imageId: 'LANDSAT/LC08/C02/T1_L2/LC08_015035_20180708',
-        validFraction: 0.851
-      }
-    }
-  },
-  {
-    id: '775032',
-    label: 'Urban flooding (July 6, 2018 – event 775032)',
-    sentinel1: {
-      before: {
-        date: '2018-06-27',
-        imageId: 'S1A_IW_GRDH_1SDV_20180627T231411_20180627T231436_022549_027150_2A0E'
-      },
-      after: {
-        date: '2018-07-09',
-        imageId: 'S1A_IW_GRDH_1SDV_20180709T231411_20180709T231436_022724_02766D_A8A8'
-      }
-    },
-    sentinel2: {
-      before: {
-        date: '2018-06-28',
-        imageId: 'COPERNICUS/S2_SR/20180628T155819_20180628T160601_T17SQV',
-        validFraction: 0.238
-      },
-      after: {
-        date: '2018-07-08',
-        imageId: 'COPERNICUS/S2_SR/20180708T155819_20180708T161248_T17SQV',
-        validFraction: 0.769
-      }
-    },
-    landsat: {
-      before: {
-        date: '2018-06-29',
-        imageId: 'LANDSAT/LC08/C02/T1_L2/LC08_016035_20180629',
-        validFraction: 0.709
-      },
-      after: {
-        date: '2018-07-08',
-        imageId: 'LANDSAT/LC08/C02/T1_L2/LC08_015035_20180708',
-        validFraction: 0.851
-      }
-    }
-  },
-  {
-    id: '775034',
-    label: 'Urban flooding (July 6, 2018 – event 775034)',
-    sentinel1: {
-      before: {
-        date: '2018-06-27',
-        imageId: 'S1A_IW_GRDH_1SDV_20180627T231411_20180627T231436_022549_027150_2A0E'
-      },
-      after: {
-        date: '2018-07-09',
-        imageId: 'S1A_IW_GRDH_1SDV_20180709T231411_20180709T231436_022724_02766D_A8A8'
-      }
-    },
-    sentinel2: {
-      before: {
-        date: '2018-06-28',
-        imageId: 'COPERNICUS/S2_SR/20180628T155819_20180628T160601_T17SQV',
-        validFraction: 0.238
-      },
-      after: {
-        date: '2018-07-08',
-        imageId: 'COPERNICUS/S2_SR/20180708T155819_20180708T161248_T17SQV',
-        validFraction: 0.769
-      }
-    },
-    landsat: {
-      before: {
-        date: '2018-06-29',
-        imageId: 'LANDSAT/LC08/C02/T1_L2/LC08_016035_20180629',
-        validFraction: 0.709
-      },
-      after: {
-        date: '2018-07-08',
-        imageId: 'LANDSAT/LC08/C02/T1_L2/LC08_015035_20180708',
-        validFraction: 0.851
-      }
-    }
-  },
-  {
-    id: '775037',
-    label: 'Urban flooding (July 6, 2018 – event 775037)',
-    sentinel1: {
-      before: {
-        date: '2018-06-27',
-        imageId: 'S1A_IW_GRDH_1SDV_20180627T231411_20180627T231436_022549_027150_2A0E'
-      },
-      after: {
-        date: '2018-07-09',
-        imageId: 'S1A_IW_GRDH_1SDV_20180709T231411_20180709T231436_022724_02766D_A8A8'
-      }
-    },
-    sentinel2: {
-      before: {
-        date: '2018-06-28',
-        imageId: 'COPERNICUS/S2_SR/20180628T155819_20180628T160601_T17SQV',
-        validFraction: 0.238
-      },
-      after: {
-        date: '2018-07-08',
-        imageId: 'COPERNICUS/S2_SR/20180708T155819_20180708T161248_T17SQV',
-        validFraction: 0.769
-      }
-    },
-    landsat: {
-      before: {
-        date: '2018-06-29',
-        imageId: 'LANDSAT/LC08/C02/T1_L2/LC08_016035_20180629',
-        validFraction: 0.709
-      },
-      after: {
-        date: '2018-07-08',
-        imageId: 'LANDSAT/LC08/C02/T1_L2/LC08_015035_20180708',
-        validFraction: 0.851
-      }
-    }
-  },
-  {
-    id: '1029187',
-    label: 'Downtown flooding (May 23, 2022)',
-    sentinel1: {
-      before: {
-        date: '2022-05-13',
-        imageId: 'S1A_IW_GRDH_1SDV_20220513T231430_20220513T231455_043199_0528C5_5077'
-      },
-      after: {
-        date: '2022-05-25',
-        imageId: 'S1A_IW_GRDH_1SDV_20220525T231430_20220525T231455_043374_052DF9_09E0'
-      }
-    },
-    sentinel2: {
-      before: {
-        date: '2022-05-20',
-        imageId: 'COPERNICUS/S2_SR/20220520T154821_20220520T155606_T17SQA',
-        validFraction: 0.051
-      },
-      after: {
-        date: '2022-05-23',
-        imageId: 'COPERNICUS/S2_SR/20220523T155831_20220523T160634_T17SQV',
-        validFraction: 0.181
-      }
-    },
-    landsat: {
-      before: {
-        date: '2022-05-16',
-        imageId: 'LANDSAT/LC08/C02/T1_L2/LC08_015035_20220516',
-        validFraction: 0.016
-      },
-      after: {
-        date: '2022-05-23',
-        imageId: 'LANDSAT/LC08/C02/T1_L2/LC08_016035_20220523',
-        validFraction: 0.309
-      }
-    }
-  },
-  {
-    id: '1173317',
-    label: 'Union Station flooding (May 25, 2024)',
-    sentinel1: {
-      before: {
-        date: '2024-05-14',
-        imageId: 'S1A_IW_GRDH_1SDV_20240514T231439_20240514T231504_053874_068C4B_5E79'
-      },
-      after: {
-        date: '2024-05-26',
-        imageId: 'S1A_IW_GRDH_1SDV_20240526T231440_20240526T231505_054049_069253_4EF3'
-      }
-    },
-    sentinel2: {
-      before: {
-        date: '2024-05-19',
-        imageId: 'COPERNICUS/S2_SR/20240519T154941_20240519T155829_T17SQA',
-        validFraction: 0.0
-      },
-      after: {
-        date: '2024-05-29',
-        imageId: 'COPERNICUS/S2_SR/20240529T154941_20240529T155815_T17SQV',
-        validFraction: 0.594
-      }
-    },
-    landsat: {
-      before: {
-        date: '2024-05-21',
-        imageId: 'LANDSAT/LC08/C02/T1_L2/LC08_015035_20240521',
-        validFraction: 0.828
-      },
-      after: {
-        date: '2024-05-28',
-        imageId: 'LANDSAT/LC08/C02/T1_L2/LC08_016035_20240528',
-        validFraction: 0.702
-      }
-    }
-  },
-  {
-    id: '1208861',
-    label: 'Raleigh flooding (Aug 3, 2024)',
-    sentinel1: {
-      before: null,
-      after: {
-        date: '2024-08-06',
-        imageId: 'S1A_IW_GRDH_1SDV_20240806T231437_20240806T231502_055099_06B6C2_779E'
-      }
-    },
-    sentinel2: {
-      before: {
-        date: '2024-07-28',
-        imageId: 'COPERNICUS/S2_SR/20240728T154941_20240728T160102_T17SQV',
-        validFraction: 0.662
-      },
-      after: {
-        date: '2024-08-05',
-        imageId: 'COPERNICUS/S2_SR/20240805T155819_20240805T160928_T17SQA',
-        validFraction: 0.0
-      }
-    },
-    landsat: {
-      before: {
-        date: '2024-07-31',
-        imageId: 'LANDSAT/LC08/C02/T1_L2/LC08_016035_20240731',
-        validFraction: 1.0
-      },
-      after: null
-    }
-  },
-  {
-    id: '1208432',
-    label: 'Capital Blvd flooding (Aug 4, 2024)',
-    sentinel1: {
-      before: null,
-      after: {
-        date: '2024-08-06',
-        imageId: 'S1A_IW_GRDH_1SDV_20240806T231437_20240806T231502_055099_06B6C2_779E'
-      }
-    },
-    sentinel2: {
-      before: {
-        date: '2024-07-28',
-        imageId: 'COPERNICUS/S2_SR/20240728T154941_20240728T160102_T17SQV',
-        validFraction: 0.662
-      },
-      after: {
-        date: '2024-08-05',
-        imageId: 'COPERNICUS/S2_SR/20240805T155819_20240805T160928_T17SQA',
-        validFraction: 0.0
-      }
-    },
-    landsat: {
-      before: {
-        date: '2024-07-31',
-        imageId: 'LANDSAT/LC08/C02/T1_L2/LC08_016035_20240731',
-        validFraction: 1.0
-      },
-      after: null
-    }
+// Get selected event by index (1-based)
+function getEventByIndex(index) {
+  if (index < 1 || index > events.length) {
+    throw new Error('Event index out of range. Use 1-' + events.length);
   }
-];
-
-// Known flood locations from NOAA data (coordinates and descriptions)
-var floodLocations = {
-  '755610': [
-    {lat: 35.89, lon: -78.71, desc: 'Begin: Crabtree Valley Mall area'},
-    {lat: 35.82, lon: -78.71, desc: 'End: Crabtree Creek overflow'},
-    {lat: 35.85, lon: -78.70, desc: 'Crabtree Valley Mall (approx)'},
-    {lat: 35.86, lon: -78.68, desc: 'Newton Road near Six Forks Road (approx)'},
-    {lat: 35.88, lon: -78.71, desc: 'Leesville Road & Millbrook Road (approx)'}
-  ],
-  '775032': [
-    {lat: 35.8, lon: -78.61, desc: 'North Raleigh Boulevard near Millbank Street'}
-  ],
-  '775034': [
-    {lat: 35.79, lon: -78.64, desc: 'Peace Street and Capitol Boulevard'}
-  ],
-  '775037': [
-    {lat: 35.8148, lon: -78.6198, desc: 'Atlantic Avenue at Hodges Street'}
-  ],
-  '775029': [
-    {lat: 35.6332, lon: -78.7092, desc: 'Banks Road and Ten Ten Road'}
-  ],
-  '775031': [
-    {lat: 35.7294, lon: -78.6466, desc: 'Gideon Creek Way near Durham Drive'}
-  ],
-  '781167': [
-    {lat: 35.8049, lon: -78.623, desc: 'Wake Forest Road near Georgetown Road'}
-  ],
-  '1029187': [
-    {lat: 35.7864, lon: -78.7353, desc: 'Wolf Creek Circle'}
-  ],
-  '1173317': [
-    {lat: 35.7794, lon: -78.6435, desc: 'Union Station (S West St & W Martin St)'}
-  ],
-  '1208861': [
-    {lat: 35.7742, lon: -78.6469, desc: 'Union Station (West St & Martin St)'}
-  ],
-  '1208432': [
-    {lat: 35.77, lon: -78.73, desc: 'I-440 eastbound (closed)'}
-  ]
-};
+  return events[index - 1];
+}
 
 // Function to create and display flood location markers
 function addFloodLocationMarkers(eventId) {
-  var locations = floodLocations[eventId];
+  var locations = (cityConfig[selectedCity].floodLocations || {})[eventId];
   if (!locations || locations.length === 0) {
     print('No location data available for event ' + eventId);
     return;
@@ -788,16 +2115,19 @@ if (beforeVH && afterVH) {
 Map.addLayer(
   ee.Image().paint(focusAOI, 1, 2),
   {palette: 'red'},
-  eventInfo.label + ' (' + eventInfo.sentinel1.after.date + ') AOI'
+  eventInfo.label + (eventInfo.sentinel1.after && eventInfo.sentinel1.after.date ? ' (' + eventInfo.sentinel1.after.date + ')' : '') + ' AOI'
 );
 
-// Crabtree highlight box
-Map.addLayer(
-  ee.Image().paint(crabtreeBox, 1, 2),
-  {palette: 'yellow'},
-  'Crabtree focus box',
-  true
-);
+// Optional city-specific highlight boxes (e.g., Crabtree Valley Mall for Raleigh)
+var highlightBoxes = cityConfig[selectedCity].highlightBoxes || [];
+highlightBoxes.forEach(function(box, idx) {
+  Map.addLayer(
+    ee.Image().paint(box.geom, 1, 2),
+    {palette: box.palette || 'yellow'},
+    box.label || ('Highlight ' + (idx + 1)),
+    true
+  );
+});
 
 // Visualize urban mask for reference (union of WorldCover built + NLCD impervious)
 Map.addLayer(

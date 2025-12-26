@@ -45,7 +45,7 @@ DEFAULT_CITY_CONFIG = {
 PROJECT_ID = "science-project-1-394520"
 
 # How far before/after an event we search for imagery per sensor.
-LOOKBACK_DAYS_S1 = 20
+LOOKBACK_DAYS_S1 = 30
 LOOKAHEAD_DAYS_S1 = 3
 LOOKBACK_DAYS_OPTICAL = 12
 LOOKAHEAD_DAYS_OPTICAL = 5

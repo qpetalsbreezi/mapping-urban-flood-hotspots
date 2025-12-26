@@ -46,9 +46,9 @@ PROJECT_ID = "science-project-1-394520"
 
 # How far before/after an event we search for imagery per sensor.
 LOOKBACK_DAYS_S1 = 30
-LOOKAHEAD_DAYS_S1 = 3
+LOOKAHEAD_DAYS_S1 = 2
 LOOKBACK_DAYS_OPTICAL = 12
-LOOKAHEAD_DAYS_OPTICAL = 5
+LOOKAHEAD_DAYS_OPTICAL = 2
 
 # Minimum valid pixel ratio required to accept an optical scene. If no scene
 # reaches this threshold we still record the best one but note the low coverage.
@@ -414,13 +414,20 @@ def main() -> None:
     records: list[dict[str, str]] = []
     skipped_no_s1_after = 0
 
-    for row in events:
+    total_events = len(events)
+    print(f"Processing {total_events} events for {city}...")
+    
+    for idx, row in enumerate(events, 1):
+        event_id = row.get("EVENT_ID", "unknown")
+        event_date = row.get("BEGIN_DATE", "unknown")
+        print(f"[{idx}/{total_events}] Processing event {event_id} ({event_date})...", end=" ", flush=True)
         record = build_record(city, row, aoi, args.min_optical_fraction, args.max_candidates)
         if record is None:
             skipped_no_s1_after += 1
+            print("SKIPPED (no Sentinel-1 after-scene)")
             continue
         records.append(record)
-        print(f"Processed event {record['event_id']} ({record['event_date']})")
+        print("✓ DONE")
 
     headers = [
         "city",

@@ -1827,14 +1827,56 @@ function loadSentinel1(scene, region) {
   if (!scene) {
     return null;
   }
+  
   var img = null;
-  if (scene.imageId) {
+  
+  // If we have a date, try to get all images and mosaic them if multiple are needed
+  // This handles Houston where multiple passes are needed to cover the full AOI
+  if (scene.date) {
+    var date = ee.Date(scene.date);
+    var start = date.advance(-1, 'day');
+    var end = date.advance(1, 'day');
+    
+    var collection = ee.ImageCollection('COPERNICUS/S1_GRD')
+      .filterBounds(region)
+      .filterDate(start, end)
+      .filter(ee.Filter.eq('instrumentMode', 'IW'));
+    
+    var count = collection.size();
+    
+    // Prepare fallback image
+    var fallbackImg = null;
+    if (scene.imageId) {
+      var prefix = 'COPERNICUS/S1_GRD/';
+      var id = scene.imageId.indexOf(prefix) === 0 ? scene.imageId : prefix + scene.imageId;
+      fallbackImg = ee.Image(id);
+    } else {
+      fallbackImg = getSentinelImage(scene.date, nextDay(scene.date), region);
+    }
+    
+    // If multiple images: mosaic them for full coverage
+    // If single image: use it directly (no need to mosaic)
+    // If no images: use fallback
+    var singleImg = collection.first();
+    var mosaicked = collection.mosaic();
+    
+    img = ee.Algorithms.If(
+      count.eq(0),
+      fallbackImg,  // No images found, use fallback
+      ee.Algorithms.If(
+        count.eq(1),
+        singleImg,  // Single image covers ROI, use it directly
+        mosaicked   // Multiple images, mosaic them
+      )
+    );
+    img = ee.Image(img);
+  } else if (scene.imageId) {
+    // No date, just use the single image
     var prefix = 'COPERNICUS/S1_GRD/';
     var id = scene.imageId.indexOf(prefix) === 0 ? scene.imageId : prefix + scene.imageId;
     img = ee.Image(id);
-  } else if (scene.date) {
-    img = getSentinelImage(scene.date, nextDay(scene.date), region);
   }
+  
   return img ? img.clip(region) : null;
 }
 
@@ -1848,6 +1890,7 @@ print('  Sentinel-2 after  ->', eventInfo.sentinel2.after);
 print('  Landsat before   ->', eventInfo.landsat.before);
 print('  Landsat after    ->', eventInfo.landsat.after);
 
+// Load Sentinel-1 images (automatically mosaicked if multiple passes available)
 var before = loadSentinel1(eventInfo.sentinel1.before, focusAOI);
 var after = loadSentinel1(eventInfo.sentinel1.after, focusAOI);
 var s2Before = loadSentinel2(eventInfo.sentinel2.before, focusAOI);

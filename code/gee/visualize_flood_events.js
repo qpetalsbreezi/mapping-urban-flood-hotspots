@@ -9,8 +9,8 @@
 // ============================================================================
 // USER SETTINGS
 // ============================================================================
-var selectedCity = 'raleigh'; // 'raleigh' or 'houston'
-var selectedEventIndex = 1;   // 1-based index within the chosen city
+var selectedCity = 'houston'; // 'raleigh' or 'houston'
+var selectedEventIndex = 3;   // 1-based index within the chosen city
 var opticalWindowDays = 10;
 
 // City-specific configuration (AOI, zoom, and optional highlight boxes)
@@ -80,7 +80,9 @@ var cityConfig = {
       [-95.6, 29.9],
       [-95.6, 29.6]
     ],
-    focusBuffer: -7000,
+    // Match Python script: LineString buffered by 1000m then bounds
+    // So we use the coordinates directly as Polygon (no buffer needed)
+    focusBuffer: 0, // No buffer - use full AOI to match image clipping
     centerZoom: 11,
     highlightBoxes: [],
     floodLocations: {}
@@ -1603,7 +1605,12 @@ var eventsByCity = {
 function buildFocusAOI(cityKey) {
   var cfg = cityConfig[cityKey];
   var outer = ee.Geometry.Polygon([cfg.outerAOICoords]);
-  return cfg.focusBuffer ? outer.buffer(cfg.focusBuffer).bounds() : outer;
+  // If focusBuffer is 0 or undefined, use full AOI (no buffering)
+  // Negative buffer shrinks, positive expands
+  if (cfg.focusBuffer && cfg.focusBuffer !== 0) {
+    return outer.buffer(cfg.focusBuffer).bounds();
+  }
+  return outer; // Use full AOI without buffering
 }
 
 var focusAOI = buildFocusAOI(selectedCity);
@@ -1879,8 +1886,11 @@ if (before || after) {
 
 var beforeVV = before ? toDbSafe(before, 'VV') : null;
 var afterVV = after ? toDbSafe(after, 'VV') : null;
-var beforeVH = before && before.bandNames().contains('VH') ? toDbSafe(before, 'VH') : null;
-var afterVH = after && after.bandNames().contains('VH') ? toDbSafe(after, 'VH') : null;
+
+// Hybrid approach: Use VH when available, stricter VV threshold when not
+var beforeVH = null;
+var afterVH = null;
+var hasVH = false;
 
 if (beforeVV) {
   Map.addLayer(beforeVV, radarVis, 'S1 VV dB Before ' + (eventInfo.sentinel1.before && eventInfo.sentinel1.before.date), false);
@@ -1920,14 +1930,45 @@ if (beforeVV && afterVV) {
     false
   );
 
-  // Flood mask: stricter threshold and VH confirmation when available
-  var vvMask = vvChangeSmoothed.lt(-1.3);
-  var vhMask = beforeVH && afterVH
-    ? afterVH.focal_mean(smoothRadius, 'circle', 'meters')
-        .subtract(beforeVH.focal_mean(smoothRadius, 'circle', 'meters'))
-        .lt(-1.3)
-    : null;
-  var floodMask = vhMask ? vvMask.and(vhMask) : vvMask;
+  // Flood mask: Hybrid approach
+  // If VH is available: use VV AND VH (both must agree) - more accurate
+  // If VH not available: use VV with stricter threshold (-1.5 dB) - reduces false positives
+  
+  // Check if VH exists in both images
+  // Use size() of filtered band list - if VH exists, size > 0
+  var beforeBands = before.bandNames();
+  var afterBands = after.bandNames();
+  var beforeHasVH = beforeBands.filter(ee.Filter.eq('item', 'VH')).size().gt(0);
+  var afterHasVH = afterBands.filter(ee.Filter.eq('item', 'VH')).size().gt(0);
+  // Both have VH if both checks are true
+  var bothHaveVH = beforeHasVH.and(afterHasVH);
+  
+  // Create VV mask (standard threshold)
+  var vvMask = vvChangeSmoothed.lt(-1.3).rename('flood');
+  
+  // Create VH mask if available
+  var vhChangeSmoothed = ee.Algorithms.If(
+    bothHaveVH,
+    ee.Image(toDbSafe(after, 'VH'))
+      .focal_mean(smoothRadius, 'circle', 'meters')
+      .subtract(ee.Image(toDbSafe(before, 'VH')).focal_mean(smoothRadius, 'circle', 'meters')),
+    ee.Image.constant(0) // dummy value, won't be used
+  );
+  
+  var vhMask = ee.Algorithms.If(
+    bothHaveVH,
+    ee.Image(vhChangeSmoothed).lt(-1.3).rename('flood'),
+    ee.Image.constant(0).rename('flood') // dummy, won't be used
+  );
+  
+  // Create flood mask: VV+VH if available, stricter VV if not
+  var floodMask = ee.Image(ee.Algorithms.If(
+    bothHaveVH,
+    // VH available: both VV and VH must agree (more accurate, fewer false positives)
+    vvMask.and(ee.Image(vhMask)).rename('flood'),
+    // VH not available: use stricter VV threshold (-1.5 dB) to reduce false positives
+    vvChangeSmoothed.lt(-1.5).rename('flood')
+  ));
 
   // Keep only built/impervious pixels before cleaning speckle
   floodMask = floodMask.updateMask(urbanMask);
@@ -1938,14 +1979,17 @@ if (beforeVV && afterVV) {
   // Remove tiny speckle blobs (min 3 connected pixels)
   floodMask = floodMask.updateMask(floodMask.connectedPixelCount(8, true).gte(3));
 
+  // Clip to AOI
+  floodMask = floodMask.clip(focusAOI);
+
   // Quick diagnostic: how many flood pixels inside focusAOI?
   var floodPixelCount = floodMask.reduceRegion({
     reducer: ee.Reducer.sum(),
     geometry: focusAOI,
     scale: 20,
     bestEffort: true
-  }).get('VV');
-  print('Flood mask pixel count (VV pixels within focus AOI):', floodPixelCount);
+  }).get('flood');
+  print('Flood mask pixel count (flood pixels within focus AOI):', floodPixelCount);
 
   floodMaskLayer = floodMask.selfMask();
 
@@ -1958,11 +2002,246 @@ if (beforeVV && afterVV) {
   );
 }
 
-if (beforeVH && afterVH) {
-  Map.addLayer(beforeVH, radarVis, 'S1 VH dB Before', false);
-  Map.addLayer(afterVH, radarVis, 'S1 VH dB After', false);
-  var vhChange = afterVH.subtract(beforeVH);
-  Map.addLayer(vhChange, {min: -4, max: 4, palette: changePalette}, 'S1 VH dB Change', false);
+// Sentinel-2 flood mask using NDWI change detection (for validation)
+var s2FloodMaskLayer = null;
+if (eventInfo.sentinel2 && (eventInfo.sentinel2.before || eventInfo.sentinel2.after)) {
+  // Load full S2 images (not just RGB) for NDWI calculation
+  var s2BeforeFull = null;
+  var s2AfterFull = null;
+  
+  if (eventInfo.sentinel2.before && eventInfo.sentinel2.before.imageId) {
+    s2BeforeFull = ee.Image(eventInfo.sentinel2.before.imageId).clip(focusAOI);
+  } else if (eventInfo.sentinel2.before && eventInfo.sentinel2.before.date) {
+    var date = ee.Date(eventInfo.sentinel2.before.date);
+    var start = date.advance(-opticalWindowDays, 'day');
+    var end = date.advance(opticalWindowDays + 1, 'day');
+    s2BeforeFull = ee.ImageCollection('COPERNICUS/S2_SR')
+      .filterBounds(focusAOI)
+      .filterDate(start, end)
+      .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 80))
+      .sort('CLOUDY_PIXEL_PERCENTAGE')
+      .first();
+    if (s2BeforeFull) {
+      s2BeforeFull = s2BeforeFull.clip(focusAOI);
+    }
+  }
+  
+  if (eventInfo.sentinel2.after && eventInfo.sentinel2.after.imageId) {
+    s2AfterFull = ee.Image(eventInfo.sentinel2.after.imageId).clip(focusAOI);
+  } else if (eventInfo.sentinel2.after && eventInfo.sentinel2.after.date) {
+    var date = ee.Date(eventInfo.sentinel2.after.date);
+    var start = date.advance(-opticalWindowDays, 'day');
+    var end = date.advance(opticalWindowDays + 1, 'day');
+    s2AfterFull = ee.ImageCollection('COPERNICUS/S2_SR')
+      .filterBounds(focusAOI)
+      .filterDate(start, end)
+      .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 80))
+      .sort('CLOUDY_PIXEL_PERCENTAGE')
+      .first();
+    if (s2AfterFull) {
+      s2AfterFull = s2AfterFull.clip(focusAOI);
+    }
+  }
+  
+  if (s2BeforeFull && s2AfterFull) {
+    // Calculate NDWI for before and after images
+    // NDWI = (Green - NIR) / (Green + NIR)
+    // Sentinel-2: B3 = Green (560nm), B8 = NIR (842nm)
+    var ndwiBefore = s2BeforeFull.normalizedDifference(['B3', 'B8']).rename('NDWI_before');
+    var ndwiAfter = s2AfterFull.normalizedDifference(['B3', 'B8']).rename('NDWI_after');
+    
+    // Apply cloud mask using SCL if available
+    var s2BeforeMasked = ndwiBefore;
+    var s2AfterMasked = ndwiAfter;
+    
+    if (s2BeforeFull.bandNames().contains('SCL')) {
+      var sclBefore = s2BeforeFull.select('SCL');
+      var cloudMaskBefore = sclBefore.neq(3)  // Not cloud shadow
+        .and(sclBefore.neq(7))   // Not cloud
+        .and(sclBefore.neq(8))    // Not cloud shadow
+        .and(sclBefore.neq(9))    // Not cloud
+        .and(sclBefore.neq(10))   // Not cirrus
+        .and(sclBefore.neq(11));  // Not snow
+      s2BeforeMasked = ndwiBefore.updateMask(cloudMaskBefore);
+    }
+    
+    if (s2AfterFull.bandNames().contains('SCL')) {
+      var sclAfter = s2AfterFull.select('SCL');
+      var cloudMaskAfter = sclAfter.neq(3)
+        .and(sclAfter.neq(7))
+        .and(sclAfter.neq(8))
+        .and(sclAfter.neq(9))
+        .and(sclAfter.neq(10))
+        .and(sclAfter.neq(11));
+      s2AfterMasked = ndwiAfter.updateMask(cloudMaskAfter);
+    }
+  
+    // Water masks (NDWI > 0.3 threshold)
+    // Try lower threshold (0.2) for better detection of shallow/urban water
+    var ndwiThreshold = 0.2; // Lowered from 0.3 for better sensitivity
+    var waterBefore = s2BeforeMasked.gt(ndwiThreshold).rename('water');
+    var waterAfter = s2AfterMasked.gt(ndwiThreshold).rename('water');
+    
+    // Diagnostic: check water detection before flood logic
+    var waterBeforeCount = waterBefore.reduceRegion({
+      reducer: ee.Reducer.sum(),
+      geometry: focusAOI,
+      scale: 30,
+      bestEffort: true
+    }).get('water');
+    var waterAfterCount = waterAfter.reduceRegion({
+      reducer: ee.Reducer.sum(),
+      geometry: focusAOI,
+      scale: 30,
+      bestEffort: true
+    }).get('water');
+    print('S2 Water detection (NDWI > ' + ndwiThreshold + '):');
+    print('  Before-scene water pixels:', waterBeforeCount);
+    print('  After-scene water pixels:', waterAfterCount);
+    
+    // Flood = new water (water after but not before)
+    var s2FloodMask = waterAfter.and(waterBefore.not()).rename('flood');
+    
+    // Diagnostic: check flood mask before filtering
+    var floodBeforeFilter = s2FloodMask.reduceRegion({
+      reducer: ee.Reducer.sum(),
+      geometry: focusAOI,
+      scale: 30,
+      bestEffort: true
+    }).get('flood');
+    print('S2 Flood pixels (before filtering):', floodBeforeFilter);
+  
+    // For S2 validation, don't apply urban mask (flood can be anywhere)
+    // Urban mask is useful for S1 to reduce false positives, but for S2
+    // we want to see all flooding for validation purposes
+    // s2FloodMask = s2FloodMask.updateMask(urbanMask); // COMMENTED OUT for validation
+    
+    // Remove permanent water
+    s2FloodMask = s2FloodMask.updateMask(permanentWater.not());
+    
+    // Remove small patches (min 3 connected pixels)
+    s2FloodMask = s2FloodMask.updateMask(
+      s2FloodMask.connectedPixelCount(8, true).gte(3)
+    );
+    
+    // Clip to AOI
+    s2FloodMask = s2FloodMask.clip(focusAOI);
+    
+    // Diagnostic: check flood mask after all filtering
+    var floodAfterFilter = s2FloodMask.reduceRegion({
+      reducer: ee.Reducer.sum(),
+      geometry: focusAOI,
+      scale: 30,
+      bestEffort: true
+    }).get('flood');
+    print('S2 Flood pixels (after all filtering):', floodAfterFilter);
+  
+  // Diagnostic: count flood pixels and check cloud coverage
+  var s2FloodPixelCount = s2FloodMask.reduceRegion({
+    reducer: ee.Reducer.sum(),
+    geometry: focusAOI,
+    scale: 10,
+    bestEffort: true
+  }).get('flood');
+  print('S2 Flood mask pixel count (NDWI-based):', s2FloodPixelCount);
+  
+  // Check cloud coverage in S2 after image
+  if (s2AfterFull && s2AfterFull.bandNames().contains('SCL')) {
+    var sclAfter = s2AfterFull.select('SCL');
+    var cloudPixels = sclAfter.eq(3).or(sclAfter.eq(7)).or(sclAfter.eq(8))
+      .or(sclAfter.eq(9)).or(sclAfter.eq(10)).or(sclAfter.eq(11));
+    var cloudPercent = cloudPixels.reduceRegion({
+      reducer: ee.Reducer.mean(),
+      geometry: focusAOI,
+      scale: 100,
+      bestEffort: true
+    }).get('SCL');
+    print('S2 After-scene cloud coverage (%):', ee.Number(cloudPercent).multiply(100));
+  }
+  
+  // Check if S2 after-scene date is reasonable
+  if (eventInfo.sentinel2.after && eventInfo.sentinel2.after.date) {
+    var eventDate = ee.Date(eventInfo.event_date || eventInfo.sentinel1.after.date);
+    var s2AfterDate = ee.Date(eventInfo.sentinel2.after.date);
+    var daysAfter = s2AfterDate.difference(eventDate, 'day');
+    print('S2 after-scene days after event:', daysAfter);
+  }
+  
+  s2FloodMaskLayer = s2FloodMask.selfMask();
+  
+    // Optional: visualize NDWI for debugging
+    Map.addLayer(
+      ndwiBefore,
+      {min: -1, max: 1, palette: ['#d73027', '#f46d43', '#fdae61', '#fee08b', '#e6f598', '#abdda4', '#66c2a5', '#3288bd', '#5e4fa2']},
+      'S2 NDWI Before',
+      false
+    );
+    Map.addLayer(
+      ndwiAfter,
+      {min: -1, max: 1, palette: ['#d73027', '#f46d43', '#fdae61', '#fee08b', '#e6f598', '#abdda4', '#66c2a5', '#3288bd', '#5e4fa2']},
+      'S2 NDWI After',
+      false
+    );
+  } else {
+    print('S2 flood mask not available: need both before and after Sentinel-2 images');
+  }
+} else {
+  print('S2 flood mask not available: no Sentinel-2 imagery data in event');
+}
+
+// Add VH layers if VH is available in both images
+if (before && after) {
+  var beforeBandsForVis = before.bandNames();
+  var afterBandsForVis = after.bandNames();
+  var beforeHasVHForVis = beforeBandsForVis.filter(ee.Filter.eq('item', 'VH')).size().gt(0);
+  var afterHasVHForVis = afterBandsForVis.filter(ee.Filter.eq('item', 'VH')).size().gt(0);
+  var bothHaveVHForVis = beforeHasVHForVis.and(afterHasVHForVis);
+  
+  // Only add VH layers if both images have VH
+  // Use conditional to create images only when VH exists
+  var beforeVHVis = ee.Image(ee.Algorithms.If(
+    bothHaveVHForVis,
+    toDbSafe(before, 'VH'),
+    ee.Image.constant(0).rename('VH') // dummy image
+  ));
+  
+  var afterVHVis = ee.Image(ee.Algorithms.If(
+    bothHaveVHForVis,
+    toDbSafe(after, 'VH'),
+    ee.Image.constant(0).rename('VH') // dummy image
+  ));
+  
+  // Only add to map if VH actually exists (mask out dummy images)
+  var beforeVHLayer = ee.Image(ee.Algorithms.If(
+    bothHaveVHForVis,
+    beforeVHVis,
+    ee.Image.constant(0).mask(ee.Image.constant(0)) // fully masked dummy
+  ));
+  
+  var afterVHLayer = ee.Image(ee.Algorithms.If(
+    bothHaveVHForVis,
+    afterVHVis,
+    ee.Image.constant(0).mask(ee.Image.constant(0)) // fully masked dummy
+  ));
+  
+  Map.addLayer(beforeVHLayer, radarVis, 'S1 VH dB Before', false);
+  Map.addLayer(afterVHLayer, radarVis, 'S1 VH dB After', false);
+  
+  var vhChangeVis = ee.Image(ee.Algorithms.If(
+    bothHaveVHForVis,
+    afterVHVis.subtract(beforeVHVis),
+    ee.Image.constant(0).mask(ee.Image.constant(0)) // fully masked dummy
+  ));
+  
+  Map.addLayer(vhChangeVis, {min: -4, max: 4, palette: changePalette}, 'S1 VH dB Change', false);
+  
+  // Print info about VH availability
+  print('VH available:', bothHaveVHForVis);
+  print('Flood detection method:', ee.Algorithms.If(
+    bothHaveVHForVis,
+    'VV AND VH (both must agree)',
+    'VV only (stricter threshold: -1.5 dB)'
+  ));
 }
 
 Map.addLayer(
@@ -2029,7 +2308,8 @@ if (!landsatBefore && !landsatAfter) {
   print('No Landsat imagery available within ±' + opticalWindowDays + ' days.');
 }
 
-// Add flood mask last so it stays visible over optical/radar backdrops
+// Add flood masks last so they stay visible over optical/radar backdrops
+// S1 Flood Mask (red)
 if (floodMaskLayer) {
   var floodFill = floodMaskLayer.visualize({
     palette: ['#e60000'], // red fill
@@ -2041,7 +2321,31 @@ if (floodMaskLayer) {
     .selfMask()
     .visualize({palette: ['#8b0000'], opacity: 0.9}); // darker red outline
   var floodVis = ee.ImageCollection([floodFill, floodOutline]).mosaic();
-  Map.addLayer(floodVis, {}, 'S1 VV Flood Mask (< -1.3 dB)', true);
+  Map.addLayer(floodVis, {}, 'S1 Flood Mask (SAR, < -1.3 dB)', true);
+}
+
+// S2 Flood Mask (blue) - for visual comparison/validation
+if (s2FloodMaskLayer) {
+  var s2FloodFill = s2FloodMaskLayer.visualize({
+    palette: ['#0066ff'], // blue fill
+    opacity: 0.55
+  });
+  var s2FloodOutline = s2FloodMaskLayer
+    .focal_max(40, 'circle', 'meters')
+    .subtract(s2FloodMaskLayer)
+    .selfMask()
+    .visualize({palette: ['#003399'], opacity: 0.9}); // darker blue outline
+  var s2FloodVis = ee.ImageCollection([s2FloodFill, s2FloodOutline]).mosaic();
+  Map.addLayer(s2FloodVis, {}, 'S2 Flood Mask (NDWI, > 0.3)', true);
+  
+  // Print comparison info
+  if (floodMaskLayer) {
+    print('=== FLOOD MASK COMPARISON ===');
+    print('Toggle S1 (red) and S2 (blue) masks to compare visually');
+    print('Overlapping areas = high confidence');
+    print('S1 only = check for clouds in S2 or SAR-specific detection');
+    print('S2 only = check for shallow water or timing differences');
+  }
 }
 
 // Add known flood location markers from NOAA data

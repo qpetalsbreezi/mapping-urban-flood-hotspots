@@ -400,7 +400,69 @@ def build_record(city: str, event_row: dict[str, str], aoi: ee.Geometry,
 
 
 # ---------------------------------------------------------------------------
+# Deduplication
+# ---------------------------------------------------------------------------
 
+
+def deduplicate_records(records: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Deduplicate records by unique S1 image pairs, preserving all NOAA event IDs.
+    
+    Groups events that share the same S1 before/after images and keeps one
+    representative row per unique pair, while preserving all associated NOAA
+    event IDs in new columns.
+    
+    Args:
+        records: List of event records with imagery matches
+        
+    Returns:
+        Deduplicated list of records with additional columns:
+        - noaa_event_ids: semicolon-separated list of all event IDs
+        - noaa_event_dates: semicolon-separated list of all event dates
+        - noaa_event_count: number of events sharing this image pair
+    """
+    from collections import defaultdict
+    
+    # Group records by unique S1 image pair
+    image_pair_groups = defaultdict(list)
+    
+    for record in records:
+        s1_before = record.get("s1_before_image_id", "")
+        s1_after = record.get("s1_after_image_id", "")
+        key = (s1_before, s1_after)
+        image_pair_groups[key].append(record)
+    
+    # Create deduplicated records
+    deduplicated: list[dict[str, str]] = []
+    
+    for key, group_records in image_pair_groups.items():
+        # Use the first record as the representative
+        representative = group_records[0].copy()
+        
+        # Collect all event IDs and dates for this image pair
+        event_ids = [r["event_id"] for r in group_records]
+        event_dates = [r["event_date"] for r in group_records]
+        
+        # Add new columns
+        representative["noaa_event_ids"] = ";".join(event_ids)
+        representative["noaa_event_dates"] = ";".join(sorted(set(event_dates)))
+        representative["noaa_event_count"] = str(len(group_records))
+        
+        # If multiple events share this pair, update event_id to show it's composite
+        if len(group_records) > 1:
+            # Use earliest event date as representative
+            representative["event_date"] = min(event_dates)
+            # Update event_id to indicate it's a composite
+            representative["event_id"] = f"{event_ids[0]}_and_{len(group_records)-1}_more"
+        
+        deduplicated.append(representative)
+    
+    # Sort by event_date
+    deduplicated.sort(key=lambda x: x["event_date"])
+    
+    return deduplicated
+
+
+# ---------------------------------------------------------------------------
 
 def main() -> None:
     args = parse_args()
@@ -428,6 +490,15 @@ def main() -> None:
             continue
         records.append(record)
         print("✓ DONE")
+
+    # Deduplicate records by unique S1 image pairs
+    original_count = len(records)
+    records = deduplicate_records(records)
+    deduplicated_count = len(records)
+    
+    if original_count != deduplicated_count:
+        print(f"\nDeduplication: {original_count} events -> {deduplicated_count} unique image pairs")
+        print(f"  Removed {original_count - deduplicated_count} duplicate events")
 
     headers = [
         "city",
@@ -458,6 +529,9 @@ def main() -> None:
         "landsat_after_offset_days",
         "landsat_after_image_id",
         "landsat_after_valid_fraction",
+        "noaa_event_ids",
+        "noaa_event_dates",
+        "noaa_event_count",
     ]
 
     output.parent.mkdir(parents=True, exist_ok=True)

@@ -10,7 +10,7 @@
 // USER SETTINGS
 // ============================================================================
 var selectedCity = 'houston'; // 'raleigh' or 'houston'
-var selectedEventIndex = 3;   // 1-based index within the chosen city
+var selectedEventIndex = 5;   // 1-based index within the chosen city
 var opticalWindowDays = 10;
 
 // City-specific configuration (AOI, zoom, and optional highlight boxes)
@@ -85,16 +85,74 @@ var cityConfig = {
     focusBuffer: 0, // No buffer - use full AOI to match image clipping
     centerZoom: 11,
     highlightBoxes: [],
-    floodLocations: {}
+    floodLocations: {
+      '579534': [
+        {lat: 30.1143, lon: -95.4547, desc: 'SPRING'},
+        {lat: 29.5997, lon: -95.6387, desc: 'HOUSTON HULL ARPT'},
+      ],
+      '675235_and_1_more': [
+        {lat: 29.5897, lon: -95.4473, desc: 'ALMEDA'},
+        {lat: 29.7156, lon: -95.2048, desc: 'PASADENA'},
+        {lat: 29.7598, lon: -95.3668, desc: 'ENGLEWOOD'},
+        {lat: 29.6487, lon: -95.5412, desc: 'MISSOURI CITY'},
+      ],
+      '710731': [
+        {lat: 29.7758, lon: -95.5879, desc: 'HERMOSSEY'},
+        {lat: 29.7878, lon: -95.3474, desc: 'ENGLEWOOD'},
+      ],
+      '710726_and_1_more': [
+        {lat: 29.8919, lon: -95.3761, desc: 'LITTLE YORK'},
+        {lat: 29.8169, lon: -95.165, desc: 'FAUNA'},
+        {lat: 29.7227, lon: -95.465, desc: 'BELLAIRE JCT'},
+        {lat: 29.88, lon: -95.4626, desc: 'GORDEN PARK'},
+      ],
+      '721084_and_5_more': [
+        {lat: 29.8067, lon: -95.4204, desc: 'WHITE OAK ACRES'},
+        {lat: 29.7525, lon: -95.4228, desc: 'HOUSTON HGTS'},
+        {lat: 30.1431, lon: -95.7622, desc: 'TOMBALL'},
+        {lat: 30.131, lon: -95.4135, desc: 'SPRING'},
+        {lat: 30.0375, lon: -95.4187, desc: 'WESTFIELD'},
+      ],
+      '830461_and_1_more': [
+        {lat: 29.8976, lon: -95.8261, desc: 'KATY'},
+        {lat: 29.6927, lon: -95.8523, desc: 'DELHI'},
+        {lat: 29.9508, lon: -95.3076, desc: 'TODD MISSION'},
+        {lat: 29.9301, lon: -95.3137, desc: 'TODD MISSION'},
+      ],
+      '857803_and_4_more': [
+        {lat: 29.6666, lon: -95.1575, desc: 'GOLDEN ACRES'},
+        {lat: 29.6666, lon: -95.1538, desc: 'GOLDEN ACRES'},
+        {lat: 30.0579, lon: -95.1776, desc: 'HUMBLE'},
+        {lat: 30.0755, lon: -95.1071, desc: 'HUFFMAN'},
+        {lat: 29.963, lon: -95.3391, desc: '(IAH)HOUSTON INTL AR'},
+      ],
+      '899524': [
+        {lat: 29.79, lon: -95.82, desc: 'KATY'},
+        {lat: 29.8685, lon: -95.6419, desc: 'HOUSTON LAKESIDE ARP'},
+      ],
+      '963117': [
+        {lat: 29.82, lon: -95.34, desc: 'SETTEGAST'},
+        {lat: 29.8231, lon: -95.3407, desc: 'SETTEGAST'},
+      ],
+      '1004355_and_4_more': [
+        {lat: 29.78, lon: -95.54, desc: 'HERMOSSEY'},
+        {lat: 29.7881, lon: -95.5383, desc: 'HERMOSSEY'},
+        {lat: 29.8228, lon: -95.5298, desc: 'SPRING BRANCH'},
+        {lat: 29.8224, lon: -95.5203, desc: 'SPRING BRANCH'},
+        {lat: 29.8198, lon: -95.5015, desc: 'SPRING BRANCH'},
+      ],
+    }
   }
 };
 
-// Placeholder; replaced below with curated events per city.
 var eventsByCity = {
   "raleigh": [
     {
         "id": "755610",
         "label": "Raleigh flood 2018-05-21",
+        "event_date": "2018-05-21",
+        "noaa_event_ids": "755610",
+        "noaa_event_count": "1",
         "sentinel1": {
             "before": {
                 "date": "2018-05-10",
@@ -121,10 +179,14 @@ var eventsByCity = {
             },
             "after": null
         }
-    },
+    }
+,
     {
-        "id": "775029",
-        "label": "Raleigh flood 2018-07-07",
+        "id": "775029_and_1_more",
+        "label": "Raleigh flood 2018-07-07 (composite: 2 events)",
+        "event_date": "2018-07-07",
+        "noaa_event_ids": "775029;775031",
+        "noaa_event_count": "2",
         "sentinel1": {
             "before": {
                 "date": "2018-06-27",
@@ -159,48 +221,14 @@ var eventsByCity = {
                 "validFraction": 0.851
             }
         }
-    },
-    {
-        "id": "775031",
-        "label": "Raleigh flood 2018-07-07",
-        "sentinel1": {
-            "before": {
-                "date": "2018-06-27",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20180627T231411_20180627T231436_022549_027150_2A0E"
-            },
-            "after": {
-                "date": "2018-07-09",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20180709T231411_20180709T231436_022724_02766D_A8A8"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2018-06-28",
-                "imageId": "COPERNICUS/S2_SR/20180628T155819_20180628T160601_T17SQV",
-                "validFraction": 0.238
-            },
-            "after": {
-                "date": "2018-07-08",
-                "imageId": "COPERNICUS/S2_SR/20180708T155819_20180708T161248_T17SQV",
-                "validFraction": 0.769
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2018-06-29",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_016035_20180629",
-                "validFraction": 0.709
-            },
-            "after": {
-                "date": "2018-07-08",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_015035_20180708",
-                "validFraction": 0.851
-            }
-        }
-    },
+    }
+,
     {
         "id": "1029187",
         "label": "Raleigh flood 2022-05-23",
+        "event_date": "2022-05-23",
+        "noaa_event_ids": "1029187",
+        "noaa_event_count": "1",
         "sentinel1": {
             "before": {
                 "date": "2022-05-13",
@@ -235,10 +263,14 @@ var eventsByCity = {
                 "validFraction": 0.309
             }
         }
-    },
+    }
+,
     {
         "id": "1173317",
         "label": "Raleigh flood 2024-05-25",
+        "event_date": "2024-05-25",
+        "noaa_event_ids": "1173317",
+        "noaa_event_count": "1",
         "sentinel1": {
             "before": {
                 "date": "2024-05-14",
@@ -265,10 +297,14 @@ var eventsByCity = {
             },
             "after": null
         }
-    },
+    }
+,
     {
         "id": "1208432",
         "label": "Raleigh flood 2024-08-04",
+        "event_date": "2024-08-04",
+        "noaa_event_ids": "1208432",
+        "noaa_event_count": "1",
         "sentinel1": {
             "before": {
                 "date": "2024-07-13",
@@ -301,6 +337,9 @@ var eventsByCity = {
     {
         "id": "579534",
         "label": "Houston flood 2015-05-30",
+        "event_date": "2015-05-30",
+        "noaa_event_ids": "579534",
+        "noaa_event_count": "1",
         "sentinel1": {
             "before": {
                 "date": "2015-05-07",
@@ -323,78 +362,14 @@ var eventsByCity = {
             },
             "after": null
         }
-    },
+    }
+,
     {
-        "id": "604968",
-        "label": "Houston flood 2015-10-31",
-        "sentinel1": {
-            "before": {
-                "date": "2015-10-22",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20151022T122242_20151022T122312_008265_00BA50_0708"
-            },
-            "after": {
-                "date": "2015-11-03",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20151103T122242_20151103T122312_008440_00BEDF_2FDA"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2015-10-22",
-                "imageId": "COPERNICUS/S2_SR/20151022T170012_20151022T170014_T15RTP",
-                "validFraction": 0.049
-            },
-            "after": null
-        },
-        "landsat": {
-            "before": {
-                "date": "2015-10-26",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_025039_20151026",
-                "validFraction": 0.675
-            },
-            "after": {
-                "date": "2015-11-02",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20151102",
-                "validFraction": 0.021
-            }
-        }
-    },
-    {
-        "id": "620705",
-        "label": "Houston flood 2016-03-18",
-        "sentinel1": {
-            "before": {
-                "date": "2016-03-14",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20160314T122234_20160314T122304_010365_00F5C2_BB20"
-            },
-            "after": {
-                "date": "2016-03-21",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SSV_20160321T121433_20160321T121458_010467_00F895_08E0"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2016-03-13",
-                "imageId": "COPERNICUS/S2_SR/20160313T171512_20160313T171515_T15RTN",
-                "validFraction": 0.639
-            },
-            "after": {
-                "date": "2016-03-20",
-                "imageId": "COPERNICUS/S2_SR/20160320T165302_20160320T170440_T15RTN",
-                "validFraction": 0.539
-            }
-        },
-        "landsat": {
-            "before": null,
-            "after": {
-                "date": "2016-03-18",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_025039_20160318",
-                "validFraction": 0.141
-            }
-        }
-    },
-    {
-        "id": "675235",
-        "label": "Houston flood 2017-01-18",
+        "id": "675235_and_1_more",
+        "label": "Houston flood 2017-01-18 (composite: 2 events)",
+        "event_date": "2017-01-18",
+        "noaa_event_ids": "675235;675098",
+        "noaa_event_count": "2",
         "sentinel1": {
             "before": {
                 "date": "2017-01-08",
@@ -421,44 +396,14 @@ var eventsByCity = {
             },
             "after": null
         }
-    },
-    {
-        "id": "675098",
-        "label": "Houston flood 2017-01-20",
-        "sentinel1": {
-            "before": {
-                "date": "2017-01-08",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170108T001813_20170108T001842_014733_017FB8_BB4E"
-            },
-            "after": {
-                "date": "2017-01-20",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170120T001812_20170120T001841_014908_018538_5822"
-            }
-        },
-        "sentinel2": {
-            "before": null,
-            "after": {
-                "date": "2017-01-24",
-                "imageId": "COPERNICUS/S2_SR/20170124T165551_20170124T165554_T15RTN",
-                "validFraction": 0.424
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2017-01-16",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_025039_20170116",
-                "validFraction": 0.677
-            },
-            "after": {
-                "date": "2017-01-23",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170123",
-                "validFraction": 0.26
-            }
-        }
-    },
+    }
+,
     {
         "id": "710731",
         "label": "Houston flood 2017-06-04",
+        "event_date": "2017-06-04",
+        "noaa_event_ids": "710731",
+        "noaa_event_count": "1",
         "sentinel1": {
             "before": {
                 "date": "2017-05-25",
@@ -475,11 +420,7 @@ var eventsByCity = {
                 "imageId": "COPERNICUS/S2_SR/20170524T170531_20170524T170526_T15RTN",
                 "validFraction": 0.559
             },
-            "after": {
-                "date": "2017-06-06",
-                "imageId": "COPERNICUS/S2_SR/20170606T171521_20170606T171521_T15RTP",
-                "validFraction": 0.313
-            }
+            "after": null
         },
         "landsat": {
             "before": {
@@ -489,10 +430,14 @@ var eventsByCity = {
             },
             "after": null
         }
-    },
+    }
+,
     {
-        "id": "710726",
-        "label": "Houston flood 2017-06-24",
+        "id": "710726_and_1_more",
+        "label": "Houston flood 2017-06-24 (composite: 2 events)",
+        "event_date": "2017-06-24",
+        "noaa_event_ids": "710726;710727",
+        "noaa_event_count": "2",
         "sentinel1": {
             "before": {
                 "date": "2017-06-13",
@@ -509,11 +454,7 @@ var eventsByCity = {
                 "imageId": "COPERNICUS/S2_SR/20170616T170311_20170616T171505_T15RTN",
                 "validFraction": 0.476
             },
-            "after": {
-                "date": "2017-06-26",
-                "imageId": "COPERNICUS/S2_SR/20170626T171521_20170626T171518_T15RTP",
-                "validFraction": 0.354
-            }
+            "after": null
         },
         "landsat": {
             "before": {
@@ -527,86 +468,14 @@ var eventsByCity = {
                 "validFraction": 0.303
             }
         }
-    },
+    }
+,
     {
-        "id": "710727",
-        "label": "Houston flood 2017-06-25",
-        "sentinel1": {
-            "before": {
-                "date": "2017-06-13",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170613T001820_20170613T001845_017008_01C531_1EE5"
-            },
-            "after": {
-                "date": "2017-06-25",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170625T001820_20170625T001845_017183_01CA88_6F42"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2017-06-16",
-                "imageId": "COPERNICUS/S2_SR/20170616T170311_20170616T171505_T15RTN",
-                "validFraction": 0.476
-            },
-            "after": {
-                "date": "2017-06-26",
-                "imageId": "COPERNICUS/S2_SR/20170626T171521_20170626T171518_T15RTP",
-                "validFraction": 0.354
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2017-06-16",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170616",
-                "validFraction": 0.176
-            },
-            "after": {
-                "date": "2017-06-25",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_025039_20170625",
-                "validFraction": 0.303
-            }
-        }
-    },
-    {
-        "id": "714368",
-        "label": "Houston flood 2017-07-09",
-        "sentinel1": {
-            "before": {
-                "date": "2017-06-30",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170630T002617_20170630T002642_017256_01CCBA_1392"
-            },
-            "after": {
-                "date": "2017-07-12",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170712T002617_20170712T002642_017431_01D208_BF55"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2017-07-03",
-                "imageId": "COPERNICUS/S2_SR/20170703T170521_20170703T170522_T15RTN",
-                "validFraction": 0.365
-            },
-            "after": {
-                "date": "2017-07-11",
-                "imageId": "COPERNICUS/S2_SR/20170711T171519_20170711T171520_T15RTP",
-                "validFraction": 0.312
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2017-07-02",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170702",
-                "validFraction": 0.107
-            },
-            "after": {
-                "date": "2017-07-11",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_025039_20170711",
-                "validFraction": 0.493
-            }
-        }
-    },
-    {
-        "id": "720858",
-        "label": "Houston flood 2017-08-26",
+        "id": "721084_and_5_more",
+        "label": "Houston flood 2017-08-27 (composite: 6 events)",
+        "event_date": "2017-08-27",
+        "noaa_event_ids": "721084;721085;721091;721096;721101;721136",
+        "noaa_event_count": "6",
         "sentinel1": {
             "before": {
                 "date": "2017-08-05",
@@ -623,11 +492,7 @@ var eventsByCity = {
                 "imageId": "COPERNICUS/S2_SR/20170815T165851_20170815T171519_T15RTP",
                 "validFraction": 0.458
             },
-            "after": {
-                "date": "2017-08-30",
-                "imageId": "COPERNICUS/S2_SR/20170830T165849_20170830T170423_T15RTN",
-                "validFraction": 0.032
-            }
+            "after": null
         },
         "landsat": {
             "before": {
@@ -637,456 +502,14 @@ var eventsByCity = {
             },
             "after": null
         }
-    },
+    }
+,
     {
-        "id": "720860",
-        "label": "Houston flood 2017-08-26",
-        "sentinel1": {
-            "before": {
-                "date": "2017-08-05",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170805T002619_20170805T002644_017781_01DCB4_1716"
-            },
-            "after": {
-                "date": "2017-08-29",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170829T002620_20170829T002645_018131_01E74D_D734"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2017-08-15",
-                "imageId": "COPERNICUS/S2_SR/20170815T165851_20170815T171519_T15RTP",
-                "validFraction": 0.458
-            },
-            "after": {
-                "date": "2017-08-30",
-                "imageId": "COPERNICUS/S2_SR/20170830T165849_20170830T170423_T15RTN",
-                "validFraction": 0.032
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2017-08-19",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170819",
-                "validFraction": 0.149
-            },
-            "after": null
-        }
-    },
-    {
-        "id": "720861",
-        "label": "Houston flood 2017-08-26",
-        "sentinel1": {
-            "before": {
-                "date": "2017-08-05",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170805T002619_20170805T002644_017781_01DCB4_1716"
-            },
-            "after": {
-                "date": "2017-08-29",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170829T002620_20170829T002645_018131_01E74D_D734"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2017-08-15",
-                "imageId": "COPERNICUS/S2_SR/20170815T165851_20170815T171519_T15RTP",
-                "validFraction": 0.458
-            },
-            "after": {
-                "date": "2017-08-30",
-                "imageId": "COPERNICUS/S2_SR/20170830T165849_20170830T170423_T15RTN",
-                "validFraction": 0.032
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2017-08-19",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170819",
-                "validFraction": 0.149
-            },
-            "after": null
-        }
-    },
-    {
-        "id": "720867",
-        "label": "Houston flood 2017-08-26",
-        "sentinel1": {
-            "before": {
-                "date": "2017-08-05",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170805T002619_20170805T002644_017781_01DCB4_1716"
-            },
-            "after": {
-                "date": "2017-08-29",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170829T002620_20170829T002645_018131_01E74D_D734"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2017-08-15",
-                "imageId": "COPERNICUS/S2_SR/20170815T165851_20170815T171519_T15RTP",
-                "validFraction": 0.458
-            },
-            "after": {
-                "date": "2017-08-30",
-                "imageId": "COPERNICUS/S2_SR/20170830T165849_20170830T170423_T15RTN",
-                "validFraction": 0.032
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2017-08-19",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170819",
-                "validFraction": 0.149
-            },
-            "after": null
-        }
-    },
-    {
-        "id": "720869",
-        "label": "Houston flood 2017-08-26",
-        "sentinel1": {
-            "before": {
-                "date": "2017-08-05",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170805T002619_20170805T002644_017781_01DCB4_1716"
-            },
-            "after": {
-                "date": "2017-08-29",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170829T002620_20170829T002645_018131_01E74D_D734"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2017-08-15",
-                "imageId": "COPERNICUS/S2_SR/20170815T165851_20170815T171519_T15RTP",
-                "validFraction": 0.458
-            },
-            "after": {
-                "date": "2017-08-30",
-                "imageId": "COPERNICUS/S2_SR/20170830T165849_20170830T170423_T15RTN",
-                "validFraction": 0.032
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2017-08-19",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170819",
-                "validFraction": 0.149
-            },
-            "after": null
-        }
-    },
-    {
-        "id": "720873",
-        "label": "Houston flood 2017-08-26",
-        "sentinel1": {
-            "before": {
-                "date": "2017-08-05",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170805T002619_20170805T002644_017781_01DCB4_1716"
-            },
-            "after": {
-                "date": "2017-08-29",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170829T002620_20170829T002645_018131_01E74D_D734"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2017-08-15",
-                "imageId": "COPERNICUS/S2_SR/20170815T165851_20170815T171519_T15RTP",
-                "validFraction": 0.458
-            },
-            "after": {
-                "date": "2017-08-30",
-                "imageId": "COPERNICUS/S2_SR/20170830T165849_20170830T170423_T15RTN",
-                "validFraction": 0.032
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2017-08-19",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170819",
-                "validFraction": 0.149
-            },
-            "after": null
-        }
-    },
-    {
-        "id": "721084",
-        "label": "Houston flood 2017-08-27",
-        "sentinel1": {
-            "before": {
-                "date": "2017-08-05",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170805T002619_20170805T002644_017781_01DCB4_1716"
-            },
-            "after": {
-                "date": "2017-08-29",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170829T002620_20170829T002645_018131_01E74D_D734"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2017-08-15",
-                "imageId": "COPERNICUS/S2_SR/20170815T165851_20170815T171519_T15RTP",
-                "validFraction": 0.458
-            },
-            "after": {
-                "date": "2017-08-30",
-                "imageId": "COPERNICUS/S2_SR/20170830T165849_20170830T170423_T15RTN",
-                "validFraction": 0.032
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2017-08-19",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170819",
-                "validFraction": 0.149
-            },
-            "after": null
-        }
-    },
-    {
-        "id": "721085",
-        "label": "Houston flood 2017-08-27",
-        "sentinel1": {
-            "before": {
-                "date": "2017-08-05",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170805T002619_20170805T002644_017781_01DCB4_1716"
-            },
-            "after": {
-                "date": "2017-08-29",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170829T002620_20170829T002645_018131_01E74D_D734"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2017-08-15",
-                "imageId": "COPERNICUS/S2_SR/20170815T165851_20170815T171519_T15RTP",
-                "validFraction": 0.458
-            },
-            "after": {
-                "date": "2017-08-30",
-                "imageId": "COPERNICUS/S2_SR/20170830T165849_20170830T170423_T15RTN",
-                "validFraction": 0.032
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2017-08-19",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170819",
-                "validFraction": 0.149
-            },
-            "after": null
-        }
-    },
-    {
-        "id": "721091",
-        "label": "Houston flood 2017-08-27",
-        "sentinel1": {
-            "before": {
-                "date": "2017-08-05",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170805T002619_20170805T002644_017781_01DCB4_1716"
-            },
-            "after": {
-                "date": "2017-08-29",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170829T002620_20170829T002645_018131_01E74D_D734"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2017-08-15",
-                "imageId": "COPERNICUS/S2_SR/20170815T165851_20170815T171519_T15RTP",
-                "validFraction": 0.458
-            },
-            "after": {
-                "date": "2017-08-30",
-                "imageId": "COPERNICUS/S2_SR/20170830T165849_20170830T170423_T15RTN",
-                "validFraction": 0.032
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2017-08-19",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170819",
-                "validFraction": 0.149
-            },
-            "after": null
-        }
-    },
-    {
-        "id": "721096",
-        "label": "Houston flood 2017-08-28",
-        "sentinel1": {
-            "before": {
-                "date": "2017-08-05",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170805T002619_20170805T002644_017781_01DCB4_1716"
-            },
-            "after": {
-                "date": "2017-08-29",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170829T002620_20170829T002645_018131_01E74D_D734"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2017-08-17",
-                "imageId": "COPERNICUS/S2_SR/20170817T164859_20170817T165603_T15RTN",
-                "validFraction": 0.446
-            },
-            "after": {
-                "date": "2017-09-01",
-                "imageId": "COPERNICUS/S2_SR/20170901T170521_20170901T170523_T15RTN",
-                "validFraction": 0.324
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2017-08-19",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170819",
-                "validFraction": 0.149
-            },
-            "after": null
-        }
-    },
-    {
-        "id": "721101",
-        "label": "Houston flood 2017-08-28",
-        "sentinel1": {
-            "before": {
-                "date": "2017-08-05",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170805T002619_20170805T002644_017781_01DCB4_1716"
-            },
-            "after": {
-                "date": "2017-08-29",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170829T002620_20170829T002645_018131_01E74D_D734"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2017-08-17",
-                "imageId": "COPERNICUS/S2_SR/20170817T164859_20170817T165603_T15RTN",
-                "validFraction": 0.446
-            },
-            "after": {
-                "date": "2017-09-01",
-                "imageId": "COPERNICUS/S2_SR/20170901T170521_20170901T170523_T15RTN",
-                "validFraction": 0.324
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2017-08-19",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170819",
-                "validFraction": 0.149
-            },
-            "after": null
-        }
-    },
-    {
-        "id": "721136",
-        "label": "Houston flood 2017-08-29",
-        "sentinel1": {
-            "before": {
-                "date": "2017-08-05",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170805T002619_20170805T002644_017781_01DCB4_1716"
-            },
-            "after": {
-                "date": "2017-08-29",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20170829T002620_20170829T002645_018131_01E74D_D734"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2017-08-17",
-                "imageId": "COPERNICUS/S2_SR/20170817T164859_20170817T165603_T15RTN",
-                "validFraction": 0.446
-            },
-            "after": {
-                "date": "2017-09-01",
-                "imageId": "COPERNICUS/S2_SR/20170901T170521_20170901T170523_T15RTN",
-                "validFraction": 0.324
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2017-08-19",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20170819",
-                "validFraction": 0.149
-            },
-            "after": null
-        }
-    },
-    {
-        "id": "757973",
-        "label": "Houston flood 2018-07-04",
-        "sentinel1": {
-            "before": {
-                "date": "2018-06-25",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20180625T002623_20180625T002648_022506_027003_2E1D"
-            },
-            "after": {
-                "date": "2018-07-07",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20180707T002623_20180707T002648_022681_02751D_506E"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2018-07-01",
-                "imageId": "COPERNICUS/S2_SR/20180701T165851_20180701T171438_T15RTN",
-                "validFraction": 0.577
-            },
-            "after": {
-                "date": "2018-07-06",
-                "imageId": "COPERNICUS/S2_SR/20180706T165849_20180706T170955_T15RTN",
-                "validFraction": 0.63
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2018-06-28",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_025039_20180628",
-                "validFraction": 0.626
-            },
-            "after": {
-                "date": "2018-07-05",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20180705",
-                "validFraction": 0.14
-            }
-        }
-    },
-    {
-        "id": "797758",
-        "label": "Houston flood 2018-12-08",
-        "sentinel1": {
-            "before": {
-                "date": "2018-12-05",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20181205T122255_20181205T122325_024890_02BDBF_F260"
-            },
-            "after": {
-                "date": "2018-12-11",
-                "imageId": "COPERNICUS/S1_GRD/S1B_IW_GRDH_1SDV_20181211T122213_20181211T122243_013994_019F7E_D44C"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2018-12-03",
-                "imageId": "COPERNICUS/S2_SR/20181203T170659_20181203T170958_T15RTN",
-                "validFraction": 0.686
-            },
-            "after": {
-                "date": "2018-12-10",
-                "imageId": "COPERNICUS/S2_SR/20181210T165659_20181210T165847_T15RTN",
-                "validFraction": 0.554
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2018-12-05",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_025039_20181205",
-                "validFraction": 0.998
-            },
-            "after": null
-        }
-    },
-    {
-        "id": "830461",
-        "label": "Houston flood 2019-05-09",
+        "id": "830461_and_1_more",
+        "label": "Houston flood 2019-05-09 (composite: 2 events)",
+        "event_date": "2019-05-09",
+        "noaa_event_ids": "830461;830464",
+        "noaa_event_count": "2",
         "sentinel1": {
             "before": {
                 "date": "2019-04-16",
@@ -1117,82 +540,14 @@ var eventsByCity = {
             },
             "after": null
         }
-    },
+    }
+,
     {
-        "id": "830464",
-        "label": "Houston flood 2019-05-09",
-        "sentinel1": {
-            "before": {
-                "date": "2019-04-16",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20190416T001829_20190416T001854_026808_030341_09F6"
-            },
-            "after": {
-                "date": "2019-05-10",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20190510T001830_20190510T001855_027158_030FB5_A959"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2019-05-04",
-                "imageId": "COPERNICUS/S2_SR/20190504T164901_20190504T170412_T15RTN",
-                "validFraction": 0.439
-            },
-            "after": {
-                "date": "2019-05-09",
-                "imageId": "COPERNICUS/S2_SR/20190509T164849_20190509T170403_T15RTP",
-                "validFraction": 0.003
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2019-04-28",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_025039_20190428",
-                "validFraction": 0.362
-            },
-            "after": null
-        }
-    },
-    {
-        "id": "853617",
-        "label": "Houston flood 2019-08-23",
-        "sentinel1": {
-            "before": {
-                "date": "2019-08-14",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20190814T001836_20190814T001901_028558_033ACC_2A62"
-            },
-            "after": {
-                "date": "2019-08-26",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20190826T001837_20190826T001902_028733_0340D4_1130"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2019-08-15",
-                "imageId": "COPERNICUS/S2_SR/20190815T165901_20190815T170855_T15RTP",
-                "validFraction": 0.327
-            },
-            "after": {
-                "date": "2019-08-27",
-                "imageId": "COPERNICUS/S2_SR/20190827T164849_20190827T165942_T15RTN",
-                "validFraction": 0.262
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2019-08-18",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_025039_20190818",
-                "validFraction": 0.272
-            },
-            "after": {
-                "date": "2019-08-25",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20190825",
-                "validFraction": 0.127
-            }
-        }
-    },
-    {
-        "id": "857803",
-        "label": "Houston flood 2019-09-18",
+        "id": "857803_and_4_more",
+        "label": "Houston flood 2019-09-18 (composite: 5 events)",
+        "event_date": "2019-09-18",
+        "noaa_event_ids": "857803;858108;858116;858117;869176",
+        "noaa_event_count": "5",
         "sentinel1": {
             "before": {
                 "date": "2019-09-07",
@@ -1209,11 +564,7 @@ var eventsByCity = {
                 "imageId": "COPERNICUS/S2_SR/20190914T165921_20190914T170704_T15RTN",
                 "validFraction": 0.673
             },
-            "after": {
-                "date": "2019-09-21",
-                "imageId": "COPERNICUS/S2_SR/20190921T165001_20190921T170157_T15RTN",
-                "validFraction": 0.239
-            }
+            "after": null
         },
         "landsat": {
             "before": {
@@ -1223,146 +574,14 @@ var eventsByCity = {
             },
             "after": null
         }
-    },
-    {
-        "id": "858108",
-        "label": "Houston flood 2019-09-19",
-        "sentinel1": {
-            "before": {
-                "date": "2019-09-07",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20190907T001837_20190907T001902_028908_0346F0_99F7"
-            },
-            "after": {
-                "date": "2019-09-19",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20190919T001837_20190919T001902_029083_034D00_7C4E"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2019-09-14",
-                "imageId": "COPERNICUS/S2_SR/20190914T165921_20190914T170704_T15RTN",
-                "validFraction": 0.673
-            },
-            "after": {
-                "date": "2019-09-21",
-                "imageId": "COPERNICUS/S2_SR/20190921T165001_20190921T170157_T15RTN",
-                "validFraction": 0.239
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2019-09-10",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20190910",
-                "validFraction": 0.135
-            },
-            "after": null
-        }
-    },
-    {
-        "id": "858116",
-        "label": "Houston flood 2019-09-19",
-        "sentinel1": {
-            "before": {
-                "date": "2019-09-07",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20190907T001837_20190907T001902_028908_0346F0_99F7"
-            },
-            "after": {
-                "date": "2019-09-19",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20190919T001837_20190919T001902_029083_034D00_7C4E"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2019-09-14",
-                "imageId": "COPERNICUS/S2_SR/20190914T165921_20190914T170704_T15RTN",
-                "validFraction": 0.673
-            },
-            "after": {
-                "date": "2019-09-21",
-                "imageId": "COPERNICUS/S2_SR/20190921T165001_20190921T170157_T15RTN",
-                "validFraction": 0.239
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2019-09-10",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20190910",
-                "validFraction": 0.135
-            },
-            "after": null
-        }
-    },
-    {
-        "id": "858117",
-        "label": "Houston flood 2019-09-19",
-        "sentinel1": {
-            "before": {
-                "date": "2019-09-07",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20190907T001837_20190907T001902_028908_0346F0_99F7"
-            },
-            "after": {
-                "date": "2019-09-19",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20190919T001837_20190919T001902_029083_034D00_7C4E"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2019-09-14",
-                "imageId": "COPERNICUS/S2_SR/20190914T165921_20190914T170704_T15RTN",
-                "validFraction": 0.673
-            },
-            "after": {
-                "date": "2019-09-21",
-                "imageId": "COPERNICUS/S2_SR/20190921T165001_20190921T170157_T15RTN",
-                "validFraction": 0.239
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2019-09-10",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20190910",
-                "validFraction": 0.135
-            },
-            "after": null
-        }
-    },
-    {
-        "id": "869176",
-        "label": "Houston flood 2019-09-19",
-        "sentinel1": {
-            "before": {
-                "date": "2019-09-07",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20190907T001837_20190907T001902_028908_0346F0_99F7"
-            },
-            "after": {
-                "date": "2019-09-19",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20190919T001837_20190919T001902_029083_034D00_7C4E"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2019-09-14",
-                "imageId": "COPERNICUS/S2_SR/20190914T165921_20190914T170704_T15RTN",
-                "validFraction": 0.673
-            },
-            "after": {
-                "date": "2019-09-21",
-                "imageId": "COPERNICUS/S2_SR/20190921T165001_20190921T170157_T15RTN",
-                "validFraction": 0.239
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2019-09-10",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20190910",
-                "validFraction": 0.135
-            },
-            "after": null
-        }
-    },
+    }
+,
     {
         "id": "899524",
         "label": "Houston flood 2020-06-25",
+        "event_date": "2020-06-25",
+        "noaa_event_ids": "899524",
+        "noaa_event_count": "1",
         "sentinel1": {
             "before": {
                 "date": "2020-06-14",
@@ -1379,11 +598,7 @@ var eventsByCity = {
                 "imageId": "COPERNICUS/S2_SR/20200617T164901_20200617T170013_T15RTN",
                 "validFraction": 0.391
             },
-            "after": {
-                "date": "2020-06-27",
-                "imageId": "COPERNICUS/S2_SR/20200627T164901_20200627T170048_T15RTP",
-                "validFraction": 0.0
-            }
+            "after": null
         },
         "landsat": {
             "before": {
@@ -1393,10 +608,14 @@ var eventsByCity = {
             },
             "after": null
         }
-    },
+    }
+,
     {
         "id": "963117",
         "label": "Houston flood 2021-06-21",
+        "event_date": "2021-06-21",
+        "noaa_event_ids": "963117",
+        "noaa_event_count": "1",
         "sentinel1": {
             "before": {
                 "date": "2021-06-09",
@@ -1414,9 +633,9 @@ var eventsByCity = {
                 "validFraction": 0.407
             },
             "after": {
-                "date": "2021-06-25",
-                "imageId": "COPERNICUS/S2_SR/20210625T165851_20210625T170701_T15RTN",
-                "validFraction": 0.263
+                "date": "2021-06-22",
+                "imageId": "COPERNICUS/S2_SR/20210622T164901_20210622T165949_T15RTP",
+                "validFraction": 0.208
             }
         },
         "landsat": {
@@ -1427,10 +646,14 @@ var eventsByCity = {
             },
             "after": null
         }
-    },
+    }
+,
     {
-        "id": "1004355",
-        "label": "Houston flood 2022-01-09",
+        "id": "1004355_and_4_more",
+        "label": "Houston flood 2022-01-09 (composite: 5 events)",
+        "event_date": "2022-01-09",
+        "noaa_event_ids": "1004355;1004356;1004366;1004373;1004376",
+        "noaa_event_count": "5",
         "sentinel1": {
             "before": {
                 "date": "2021-12-30",
@@ -1446,148 +669,8 @@ var eventsByCity = {
                 "date": "2022-01-03",
                 "imageId": "COPERNICUS/S2_SR/20220103T165709_20220103T170107_T15RTN",
                 "validFraction": 0.542
-            },
-            "after": {
-                "date": "2022-01-13",
-                "imageId": "COPERNICUS/S2_SR/20220113T165639_20220113T170031_T15RTN",
-                "validFraction": 0.549
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2022-01-05",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20220105",
-                "validFraction": 0.287
             },
             "after": null
-        }
-    },
-    {
-        "id": "1004356",
-        "label": "Houston flood 2022-01-09",
-        "sentinel1": {
-            "before": {
-                "date": "2021-12-30",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20211230T002644_20211230T002709_041231_04E66D_5F0B"
-            },
-            "after": {
-                "date": "2022-01-11",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20220111T002644_20220111T002709_041406_04EC59_F1CD"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2022-01-03",
-                "imageId": "COPERNICUS/S2_SR/20220103T165709_20220103T170107_T15RTN",
-                "validFraction": 0.542
-            },
-            "after": {
-                "date": "2022-01-13",
-                "imageId": "COPERNICUS/S2_SR/20220113T165639_20220113T170031_T15RTN",
-                "validFraction": 0.549
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2022-01-05",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20220105",
-                "validFraction": 0.287
-            },
-            "after": null
-        }
-    },
-    {
-        "id": "1004366",
-        "label": "Houston flood 2022-01-09",
-        "sentinel1": {
-            "before": {
-                "date": "2021-12-30",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20211230T002644_20211230T002709_041231_04E66D_5F0B"
-            },
-            "after": {
-                "date": "2022-01-11",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20220111T002644_20220111T002709_041406_04EC59_F1CD"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2022-01-03",
-                "imageId": "COPERNICUS/S2_SR/20220103T165709_20220103T170107_T15RTN",
-                "validFraction": 0.542
-            },
-            "after": {
-                "date": "2022-01-13",
-                "imageId": "COPERNICUS/S2_SR/20220113T165639_20220113T170031_T15RTN",
-                "validFraction": 0.549
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2022-01-05",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20220105",
-                "validFraction": 0.287
-            },
-            "after": null
-        }
-    },
-    {
-        "id": "1004373",
-        "label": "Houston flood 2022-01-09",
-        "sentinel1": {
-            "before": {
-                "date": "2021-12-30",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20211230T002644_20211230T002709_041231_04E66D_5F0B"
-            },
-            "after": {
-                "date": "2022-01-11",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20220111T002644_20220111T002709_041406_04EC59_F1CD"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2022-01-03",
-                "imageId": "COPERNICUS/S2_SR/20220103T165709_20220103T170107_T15RTN",
-                "validFraction": 0.542
-            },
-            "after": {
-                "date": "2022-01-13",
-                "imageId": "COPERNICUS/S2_SR/20220113T165639_20220113T170031_T15RTN",
-                "validFraction": 0.549
-            }
-        },
-        "landsat": {
-            "before": {
-                "date": "2022-01-05",
-                "imageId": "LANDSAT/LC08/C02/T1_L2/LC08_026039_20220105",
-                "validFraction": 0.287
-            },
-            "after": null
-        }
-    },
-    {
-        "id": "1004376",
-        "label": "Houston flood 2022-01-09",
-        "sentinel1": {
-            "before": {
-                "date": "2021-12-30",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20211230T002644_20211230T002709_041231_04E66D_5F0B"
-            },
-            "after": {
-                "date": "2022-01-11",
-                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20220111T002644_20220111T002709_041406_04EC59_F1CD"
-            }
-        },
-        "sentinel2": {
-            "before": {
-                "date": "2022-01-03",
-                "imageId": "COPERNICUS/S2_SR/20220103T165709_20220103T170107_T15RTN",
-                "validFraction": 0.542
-            },
-            "after": {
-                "date": "2022-01-13",
-                "imageId": "COPERNICUS/S2_SR/20220113T165639_20220113T170031_T15RTN",
-                "validFraction": 0.549
-            }
         },
         "landsat": {
             "before": {
@@ -1623,9 +706,13 @@ if (!events || events.length === 0) {
 }
 
 // Sentinel-1 visualization stretch (VV polarization)
-var radarVis = {min: -20, max: 0};
+// Based on actual data: min ~-25 dB, max ~22 dB, median ~-9 dB
+// Typical range: water (-20 to -30 dB), urban (-5 to -15 dB), vegetation (-10 to -20 dB)
+// Use full range to show all detail, but focus on typical values
+var radarVis = {min: -25, max: 10};
 var s2Vis = {bands: ['B4', 'B3', 'B2'], min: 0.04, max: 0.25};
 var landsatVis = {bands: ['red', 'green', 'blue'], min: 0.03, max: 0.22};
+var changePalette = ['#0000ff', '#00ffff', '#ffff00', '#ff0000']; // blue to red for change
 // Note: All layers are loaded but unchecked by default (except AOI and flood markers)
 // You can toggle them on/off in the layers panel without reloading
 
@@ -1638,10 +725,34 @@ function getEventByIndex(index) {
 }
 
 // Function to create and display flood location markers
-function addFloodLocationMarkers(eventId) {
-  var locations = (cityConfig[selectedCity].floodLocations || {})[eventId];
+// Handles composite events with multiple NOAA event IDs
+function addFloodLocationMarkers(eventId, noaaEventIds) {
+  var locations = [];
+  var floodLocations = cityConfig[selectedCity].floodLocations || {};
+  
+  // Check if composite event (multiple NOAA IDs separated by ';')
+  if (noaaEventIds.indexOf(';') >= 0) {
+    // Composite event - check all NOAA event IDs
+    var eventIdList = noaaEventIds.split(';');
+    for (var i = 0; i < eventIdList.length; i++) {
+      var id = eventIdList[i].trim();
+      if (floodLocations[id]) {
+        locations = locations.concat(floodLocations[id]);
+      }
+    }
+  } else {
+    // Single event - use the NOAA event ID
+    var checkId = noaaEventIds.trim();
+    if (floodLocations[checkId]) {
+      locations = floodLocations[checkId];
+    } else if (floodLocations[eventId]) {
+      // Fallback to event ID if NOAA ID not found
+      locations = floodLocations[eventId];
+    }
+  }
+  
   if (!locations || locations.length === 0) {
-    print('No location data available for event ' + eventId);
+    print('No location data available for event ' + eventId + ' (NOAA IDs: ' + noaaEventIds + ')');
     return;
   }
   
@@ -1658,7 +769,7 @@ function addFloodLocationMarkers(eventId) {
   Map.addLayer(
     locationCollection,
     {
-      color: '#ff9800', // orange to distinguish from flood mask
+      color: '#9c27b0', // purple to distinguish from flood mask
       pointSize: 5,
       pointShape: 'circle'
     },
@@ -1673,216 +784,24 @@ function addFloodLocationMarkers(eventId) {
   Map.addLayer(
     buffered,
     {
-      color: '#ff9800',
-      fillColor: '#ff9800',
+      color: '#9c27b0',
+      fillColor: '#9c27b0',
       fillOpacity: 0.2
     },
     'Flood Location Buffers (100m)',
     false // Start with layer turned off
   );
-  
-  print('Added ' + locations.length + ' flood location markers for event ' + eventId);
-}
-
-// Get selected event by index (1-based)
-function getEventByIndex(index) {
-  if (index < 1 || index > events.length) {
-    throw new Error('Event index out of range. Use 1-' + events.length);
-  }
-  return events[index - 1];
 }
 
 var selectedEvent = getEventByIndex(selectedEventIndex);
 var selectedEventId = selectedEvent.id;
-
-function formatLabel(prefix, scene) {
-  if (!scene || !scene.date) {
-    return prefix;
-  }
-  return prefix + ' ' + scene.date;
-}
-
-function nextDay(dateStr) {
-  var d = new Date(dateStr + 'T00:00:00Z');
-  d.setUTCDate(d.getUTCDate() + 1);
-  return d.toISOString().slice(0, 10);
-}
-
-// Keep findEvent for backward compatibility, but use selectedEvent directly
-function findEvent(eventId) {
-  for (var i = 0; i < events.length; i++) {
-    if (events[i].id === eventId) {
-      return events[i];
-    }
-  }
-  throw new Error('Event ID not found: ' + eventId);
-}
-
-// Helper to fetch the first Sentinel-1 image in a one-day window
-function getSentinelImage(startDate, endDate, region) {
-  return ee.ImageCollection('COPERNICUS/S1_GRD')
-    .filterBounds(region)
-    .filterDate(startDate, endDate)
-    .filter(ee.Filter.eq('instrumentMode', 'IW'))
-    // Polarisation filter using listContains to avoid empty collections
-    .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VV'))
-    .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VH'))
-    .first();
-}
-
-// Convert linear sigma0 to dB for easier interpretation
-function toDb(img) {
-  return ee.Image(img).log10().multiply(10);
-}
-
-// Safer dB conversion that guards against zeros and adds an optional linear preview.
-function toDbSafe(img, bandName) {
-  var band = ee.Image(img).select(bandName);
-  var clipped = band.max(1e-6); // avoid log of zero
-  return clipped.log10().multiply(10);
-}
-
-function maskS2Clouds(image) {
-  var scaled = image.select(['B4', 'B3', 'B2']).divide(10000);
-  var sclMask = ee.Image(ee.Algorithms.If(
-    image.bandNames().contains('SCL'),
-    image.select('SCL')
-      .neq(3)
-      .and(image.select('SCL').neq(7))
-      .and(image.select('SCL').neq(8))
-      .and(image.select('SCL').neq(9))
-      .and(image.select('SCL').neq(10))
-      .and(image.select('SCL').neq(11)),
-    ee.Image(1)
-  ));
-  return scaled.updateMask(sclMask);
-}
-
-function loadSentinel2(scene, region) {
-  if (!scene) {
-    return null;
-  }
-  var img = null;
-  if (scene.imageId) {
-    img = maskS2Clouds(ee.Image(scene.imageId));
-  } else if (scene.date) {
-    var date = ee.Date(scene.date);
-    var start = date.advance(-opticalWindowDays, 'day');
-    var end = date.advance(opticalWindowDays + 1, 'day');
-    img = ee.ImageCollection('COPERNICUS/S2_SR')
-      .filterBounds(region)
-      .filterDate(start, end)
-      .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 80))
-      .map(maskS2Clouds)
-      .sort('CLOUDY_PIXEL_PERCENTAGE')
-      .first();
-  }
-  if (img) {
-    img = img.clip(region);
-  }
-  return img;
-}
-
-function prepareLandsat(image) {
-  var qaPixel = image.select('QA_PIXEL');
-  var cloudShadowBitMask = 1 << 4;
-  var cloudsBitMask = 1 << 3;
-  var mask = qaPixel.bitwiseAnd(cloudShadowBitMask).eq(0)
-    .and(qaPixel.bitwiseAnd(cloudsBitMask).eq(0));
-
-  var scaled = image.select(['SR_B4', 'SR_B3', 'SR_B2'])
-    .multiply(0.0000275)
-    .add(-0.2)
-    .rename(['red', 'green', 'blue']);
-
-  return scaled.updateMask(mask);
-}
-
-function loadLandsat(scene, region) {
-  if (!scene) {
-    return null;
-  }
-  var img = null;
-  if (scene.imageId) {
-    img = prepareLandsat(ee.Image(scene.imageId));
-  } else if (scene.date) {
-    var date = ee.Date(scene.date);
-    var start = date.advance(-opticalWindowDays, 'day');
-    var end = date.advance(opticalWindowDays + 1, 'day');
-    img = ee.ImageCollection('LANDSAT/LC08/C02/T1_L2')
-      .merge(ee.ImageCollection('LANDSAT/LC09/C02/T1_L2'))
-      .filterBounds(region)
-      .filterDate(start, end)
-      .map(prepareLandsat)
-      .sort('system:time_start')
-      .first();
-  }
-  if (img) {
-    img = img.clip(region);
-  }
-  return img;
-}
-
-function loadSentinel1(scene, region) {
-  if (!scene) {
-    return null;
-  }
-  
-  var img = null;
-  
-  // If we have a date, try to get all images and mosaic them if multiple are needed
-  // This handles Houston where multiple passes are needed to cover the full AOI
-  if (scene.date) {
-    var date = ee.Date(scene.date);
-    var start = date.advance(-1, 'day');
-    var end = date.advance(1, 'day');
-    
-    var collection = ee.ImageCollection('COPERNICUS/S1_GRD')
-      .filterBounds(region)
-      .filterDate(start, end)
-      .filter(ee.Filter.eq('instrumentMode', 'IW'));
-    
-    var count = collection.size();
-    
-    // Prepare fallback image
-    var fallbackImg = null;
-    if (scene.imageId) {
-      var prefix = 'COPERNICUS/S1_GRD/';
-      var id = scene.imageId.indexOf(prefix) === 0 ? scene.imageId : prefix + scene.imageId;
-      fallbackImg = ee.Image(id);
-    } else {
-      fallbackImg = getSentinelImage(scene.date, nextDay(scene.date), region);
-    }
-    
-    // If multiple images: mosaic them for full coverage
-    // If single image: use it directly (no need to mosaic)
-    // If no images: use fallback
-    var singleImg = collection.first();
-    var mosaicked = collection.mosaic();
-    
-    img = ee.Algorithms.If(
-      count.eq(0),
-      fallbackImg,  // No images found, use fallback
-      ee.Algorithms.If(
-        count.eq(1),
-        singleImg,  // Single image covers ROI, use it directly
-        mosaicked   // Multiple images, mosaic them
-      )
-    );
-    img = ee.Image(img);
-  } else if (scene.imageId) {
-    // No date, just use the single image
-    var prefix = 'COPERNICUS/S1_GRD/';
-    var id = scene.imageId.indexOf(prefix) === 0 ? scene.imageId : prefix + scene.imageId;
-    img = ee.Image(id);
-  }
-  
-  return img ? img.clip(region) : null;
-}
-
 var eventInfo = selectedEvent;
 print('Selected event [' + selectedEventIndex + '/' + events.length + ']:', eventInfo.label);
 print('  Event ID:', eventInfo.id);
+if (parseInt(eventInfo.noaa_event_count) > 1) {
+  print('  NOAA Event IDs (composite):', eventInfo.noaa_event_ids, '(' + eventInfo.noaa_event_count + ' events)');
+}
+print('  Event Date:', eventInfo.event_date);
 print('  Sentinel-1 before ->', eventInfo.sentinel1.before);
 print('  Sentinel-1 after  ->', eventInfo.sentinel1.after);
 print('  Sentinel-2 before ->', eventInfo.sentinel2.before);
@@ -1890,13 +809,105 @@ print('  Sentinel-2 after  ->', eventInfo.sentinel2.after);
 print('  Landsat before   ->', eventInfo.landsat.before);
 print('  Landsat after    ->', eventInfo.landsat.after);
 
-// Load Sentinel-1 images (automatically mosaicked if multiple passes available)
-var before = loadSentinel1(eventInfo.sentinel1.before, focusAOI);
-var after = loadSentinel1(eventInfo.sentinel1.after, focusAOI);
-var s2Before = loadSentinel2(eventInfo.sentinel2.before, focusAOI);
-var s2After = loadSentinel2(eventInfo.sentinel2.after, focusAOI);
-var landsatBefore = loadLandsat(eventInfo.landsat.before, focusAOI);
-var landsatAfter = loadLandsat(eventInfo.landsat.after, focusAOI);
+// Helper functions
+function formatLabel(prefix, scene) {
+  if (!scene || !scene.date) return prefix;
+  return prefix + ' (' + scene.date + ')';
+}
+
+function nextDay(dateStr) {
+  return ee.Date(dateStr).advance(1, 'day').format('YYYY-MM-dd');
+}
+
+function toDbSafe(img, band) {
+  // Sentinel-1 GRD data in Earth Engine is already in dB scale
+  // Just select the band - no conversion needed
+  return ee.Image(img).select(band);
+}
+
+function maskS2Clouds(img) {
+  var scl = img.select('SCL');
+  var cloudMask = scl.neq(4)  // 4 = cloud shadow
+    .and(scl.neq(5))  // 5 = cloud
+    .and(scl.neq(6))  // 6 = cloud (low prob)
+    .and(scl.neq(7)); // 7 = cloud (medium prob)
+  return img.updateMask(cloudMask);
+}
+
+// Load Sentinel-1 with mosaicking for full AOI coverage
+function loadSentinel1(imageId, eventDate) {
+  if (!imageId) return null;
+  
+  // First, try to load the specific image by ID
+  var specificImage = ee.Image(imageId);
+  
+  // Check if we need to mosaic (for Houston, multiple passes may be needed)
+  // Query all S1 images within 1-day window around the event date
+  var eventDateObj = ee.Date(eventDate);
+  var startDate = eventDateObj.advance(-1, 'day');
+  var endDate = eventDateObj.advance(1, 'day');
+  
+  var s1Collection = ee.ImageCollection('COPERNICUS/S1_GRD')
+    .filterBounds(focusAOI)
+    .filterDate(startDate, endDate)
+    .filter(ee.Filter.listContains('system:band_names', 'VV'));
+  
+  var count = s1Collection.size();
+  
+  // If multiple images, mosaic them for full coverage
+  // Otherwise, use the specific image
+  var result = ee.Algorithms.If(
+    count.gt(1),
+    s1Collection.mosaic(), // Multiple images - mosaic them for full coverage
+    specificImage // Use the specific image ID
+  );
+  
+  return ee.Image(result);
+}
+
+function loadSentinel2(imageId) {
+  if (!imageId) return null;
+  return maskS2Clouds(ee.Image(imageId));
+}
+
+function loadLandsat(imageId) {
+  if (!imageId) return null;
+  var img = ee.Image(imageId);
+  
+  // Landsat Collection 2 Level 2 has SR_B2, SR_B3, SR_B4 bands
+  // Scale to reflectance and rename to red, green, blue for visualization
+  // Scale factor: 0.0000275, offset: -0.2
+  var red = img.select('SR_B4').multiply(0.0000275).add(-0.2).rename('red');
+  var green = img.select('SR_B3').multiply(0.0000275).add(-0.2).rename('green');
+  var blue = img.select('SR_B2').multiply(0.0000275).add(-0.2).rename('blue');
+  
+  // Apply cloud mask using QA_PIXEL
+  var qaPixel = img.select('QA_PIXEL');
+  var cloudShadowBitMask = 1 << 4;
+  var cloudsBitMask = 1 << 3;
+  var mask = qaPixel.bitwiseAnd(cloudShadowBitMask).eq(0)
+    .and(qaPixel.bitwiseAnd(cloudsBitMask).eq(0));
+  
+  return ee.Image.cat([red, green, blue]).updateMask(mask);
+}
+
+// Load images
+var before = loadSentinel1(eventInfo.sentinel1.before && eventInfo.sentinel1.before.imageId, 
+                          eventInfo.sentinel1.before && eventInfo.sentinel1.before.date);
+var after = loadSentinel1(eventInfo.sentinel1.after && eventInfo.sentinel1.after.imageId,
+                          eventInfo.sentinel1.after && eventInfo.sentinel1.after.date);
+var s2Before = loadSentinel2(eventInfo.sentinel2.before && eventInfo.sentinel2.before.imageId);
+var s2After = loadSentinel2(eventInfo.sentinel2.after && eventInfo.sentinel2.after.imageId);
+var landsatBefore = loadLandsat(eventInfo.landsat.before && eventInfo.landsat.before.imageId);
+var landsatAfter = loadLandsat(eventInfo.landsat.after && eventInfo.landsat.after.imageId);
+
+// Clip to AOI
+if (before) before = before.clip(focusAOI);
+if (after) after = after.clip(focusAOI);
+if (s2Before) s2Before = s2Before.clip(focusAOI);
+if (s2After) s2After = s2After.clip(focusAOI);
+if (landsatBefore) landsatBefore = landsatBefore.clip(focusAOI);
+if (landsatAfter) landsatAfter = landsatAfter.clip(focusAOI);
 
 // Urban reference mask (built-up OR >=20% impervious) for context
 var worldCover = ee.Image('ESA/WorldCover/v200/2021').select('Map').rename('landcover');
@@ -1916,6 +927,8 @@ var permanentWater = jrcWater.gte(50).unmask(0).rename('perm_water'); // occurre
 
 // Holder for the flood mask so we can overlay it last (above optical layers)
 var floodMaskLayer = null;
+var s2FloodMaskLayer = null;
+
 // Sentinel-1 VV/VH in dB plus difference/ratio helpers for debugging flood signal
 print('Has S1 before:', !!before, 'Has S1 after:', !!after);
 
@@ -1927,32 +940,71 @@ if (before || after) {
   }));
 }
 
+// Diagnostic: Check raw values before conversion
+if (before) {
+  var rawVV = before.select('VV');
+  var rawStats = rawVV.reduceRegion({
+    reducer: ee.Reducer.minMax().combine({
+      reducer2: ee.Reducer.percentile([5, 50, 95]),
+      sharedInputs: true
+    }),
+    geometry: focusAOI,
+    scale: 100,
+    bestEffort: true
+  });
+  print('S1 VV Raw (linear) statistics:', rawStats);
+}
+
 var beforeVV = before ? toDbSafe(before, 'VV') : null;
 var afterVV = after ? toDbSafe(after, 'VV') : null;
 
-// Hybrid approach: Use VH when available, stricter VV threshold when not
-var beforeVH = null;
-var afterVH = null;
-var hasVH = false;
-
+// Diagnostic: Check actual dB values in the image
 if (beforeVV) {
+  var beforeStats = beforeVV.reduceRegion({
+    reducer: ee.Reducer.minMax().combine({
+      reducer2: ee.Reducer.percentile([5, 50, 95]),
+      sharedInputs: true
+    }),
+    geometry: focusAOI,
+    scale: 100,
+    bestEffort: true
+  });
+  print('S1 VV dB Before statistics:', beforeStats);
+  
+  // If most values are at -60 dB (clipping threshold), the conversion might be wrong
+  // Try using Earth Engine's built-in toNatural() and then log10 conversion
   Map.addLayer(beforeVV, radarVis, 'S1 VV dB Before ' + (eventInfo.sentinel1.before && eventInfo.sentinel1.before.date), false);
-  Map.addLayer(before.select('VV'), {min: 0, max: 0.25}, 'S1 VV Linear Before (debug)', false);
 } else {
   print('Warning: missing Sentinel-1 "before" scene.');
 }
 
 if (afterVV) {
   Map.addLayer(afterVV, radarVis, 'S1 VV dB After ' + (eventInfo.sentinel1.after && eventInfo.sentinel1.after.date), false);
-  Map.addLayer(after.select('VV'), {min: 0, max: 0.25}, 'S1 VV Linear After (debug)', false);
 } else {
   print('Warning: missing Sentinel-1 "after" scene!');
 }
 
-// Change layers to highlight flooding (negative = darker after)
+// Change layers to highlight flooding (negative = darker after = flooding)
+// dB change = after_dB - before_dB
+// Negative values mean backscatter decreased (darker) = likely flooding
+// Positive values mean backscatter increased (brighter) = unlikely flooding
 if (beforeVV && afterVV) {
+  // Calculate change: after - before
+  // If after is darker (lower dB) than before, change is negative = flooding
   var vvChange = afterVV.subtract(beforeVV);
-  var changePalette = ['#0b4f6c', '#4f9cf6', '#d1d5db', '#fbbf24', '#b91c1c']; // blue → gray → red
+  
+  // Diagnostic: Check change statistics
+  var vvChangeStats = vvChange.reduceRegion({
+    reducer: ee.Reducer.minMax().combine({
+      reducer2: ee.Reducer.percentile([5, 50, 95]),
+      sharedInputs: true
+    }),
+    geometry: focusAOI,
+    scale: 100,
+    bestEffort: true
+  });
+  print('S1 VV dB Change statistics:', vvChangeStats);
+  
   Map.addLayer(
     vvChange,
     {min: -4, max: 4, palette: changePalette},
@@ -1978,18 +1030,29 @@ if (beforeVV && afterVV) {
   // If VH not available: use VV with stricter threshold (-1.5 dB) - reduces false positives
   
   // Check if VH exists in both images
-  // Use size() of filtered band list - if VH exists, size > 0
   var beforeBands = before.bandNames();
   var afterBands = after.bandNames();
   var beforeHasVH = beforeBands.filter(ee.Filter.eq('item', 'VH')).size().gt(0);
   var afterHasVH = afterBands.filter(ee.Filter.eq('item', 'VH')).size().gt(0);
-  // Both have VH if both checks are true
   var bothHaveVH = beforeHasVH.and(afterHasVH);
   
-  // Create VV mask (standard threshold)
+  // Create VV mask (threshold to detect flooding)
+  // Negative change = backscatter decreased = flooding
+  // Use -1.3 dB threshold to detect moderate flooding
   var vvMask = vvChangeSmoothed.lt(-1.3).rename('flood');
   
+  // Diagnostic: Check VV mask pixel count
+  var vvMaskCount = vvMask.reduceRegion({
+    reducer: ee.Reducer.sum(),
+    geometry: focusAOI,
+    scale: 100,
+    bestEffort: true
+  }).get('flood');
+  print('VV flood mask pixels (before VH combination):', vvMaskCount);
+  
   // Create VH mask if available
+  // VH change = after_VH_dB - before_VH_dB (negative = flooding)
+  // Both images are already in dB, so subtraction gives dB change directly
   var vhChangeSmoothed = ee.Algorithms.If(
     bothHaveVH,
     ee.Image(toDbSafe(after, 'VH'))
@@ -2000,236 +1063,116 @@ if (beforeVV && afterVV) {
   
   var vhMask = ee.Algorithms.If(
     bothHaveVH,
-    ee.Image(vhChangeSmoothed).lt(-1.3).rename('flood'),
-    ee.Image.constant(0).rename('flood') // dummy, won't be used
+    ee.Image(vhChangeSmoothed).lt(-1.3).rename('flood'), // Moderate threshold
+    ee.Image.constant(0).mask(ee.Image.constant(0)) // fully masked dummy
   );
   
-  // Create flood mask: VV+VH if available, stricter VV if not
-  var floodMask = ee.Image(ee.Algorithms.If(
-    bothHaveVH,
-    // VH available: both VV and VH must agree (more accurate, fewer false positives)
-    vvMask.and(ee.Image(vhMask)).rename('flood'),
-    // VH not available: use stricter VV threshold (-1.5 dB) to reduce false positives
-    vvChangeSmoothed.lt(-1.5).rename('flood')
-  ));
-
-  // Keep only built/impervious pixels before cleaning speckle
-  floodMask = floodMask.updateMask(urbanMask);
-
-  // Drop permanent water pixels (JRC occurrence >=50%)
-  floodMask = floodMask.updateMask(permanentWater.not());
-
-  // Remove tiny speckle blobs (min 3 connected pixels)
-  floodMask = floodMask.updateMask(floodMask.connectedPixelCount(8, true).gte(3));
-
-  // Clip to AOI
-  floodMask = floodMask.clip(focusAOI);
-
-  // Quick diagnostic: how many flood pixels inside focusAOI?
-  var floodPixelCount = floodMask.reduceRegion({
-    reducer: ee.Reducer.sum(),
-    geometry: focusAOI,
-    scale: 20,
-    bestEffort: true
-  }).get('flood');
-  print('Flood mask pixel count (flood pixels within focus AOI):', floodPixelCount);
-
-  floodMaskLayer = floodMask.selfMask();
-
-  var vvRatio = afterVV.subtract(beforeVV).divide(beforeVV.abs().max(1e-6));
-  Map.addLayer(
-    vvRatio,
-    {min: -0.5, max: 0.5, palette: ['#0b4f6c', '#4f9cf6', '#d1d5db', '#fbbf24', '#b91c1c']},
-    'S1 VV Rel Change',
-    false
-  );
-}
-
-// Sentinel-2 flood mask using NDWI change detection (for validation)
-var s2FloodMaskLayer = null;
-if (eventInfo.sentinel2 && (eventInfo.sentinel2.before || eventInfo.sentinel2.after)) {
-  // Load full S2 images (not just RGB) for NDWI calculation
-  var s2BeforeFull = null;
-  var s2AfterFull = null;
-  
-  if (eventInfo.sentinel2.before && eventInfo.sentinel2.before.imageId) {
-    s2BeforeFull = ee.Image(eventInfo.sentinel2.before.imageId).clip(focusAOI);
-  } else if (eventInfo.sentinel2.before && eventInfo.sentinel2.before.date) {
-    var date = ee.Date(eventInfo.sentinel2.before.date);
-    var start = date.advance(-opticalWindowDays, 'day');
-    var end = date.advance(opticalWindowDays + 1, 'day');
-    s2BeforeFull = ee.ImageCollection('COPERNICUS/S2_SR')
-      .filterBounds(focusAOI)
-      .filterDate(start, end)
-      .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 80))
-      .sort('CLOUDY_PIXEL_PERCENTAGE')
-      .first();
-    if (s2BeforeFull) {
-      s2BeforeFull = s2BeforeFull.clip(focusAOI);
-    }
-  }
-  
-  if (eventInfo.sentinel2.after && eventInfo.sentinel2.after.imageId) {
-    s2AfterFull = ee.Image(eventInfo.sentinel2.after.imageId).clip(focusAOI);
-  } else if (eventInfo.sentinel2.after && eventInfo.sentinel2.after.date) {
-    var date = ee.Date(eventInfo.sentinel2.after.date);
-    var start = date.advance(-opticalWindowDays, 'day');
-    var end = date.advance(opticalWindowDays + 1, 'day');
-    s2AfterFull = ee.ImageCollection('COPERNICUS/S2_SR')
-      .filterBounds(focusAOI)
-      .filterDate(start, end)
-      .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', 80))
-      .sort('CLOUDY_PIXEL_PERCENTAGE')
-      .first();
-    if (s2AfterFull) {
-      s2AfterFull = s2AfterFull.clip(focusAOI);
-    }
-  }
-  
-  if (s2BeforeFull && s2AfterFull) {
-    // Calculate NDWI for before and after images
-    // NDWI = (Green - NIR) / (Green + NIR)
-    // Sentinel-2: B3 = Green (560nm), B8 = NIR (842nm)
-    var ndwiBefore = s2BeforeFull.normalizedDifference(['B3', 'B8']).rename('NDWI_before');
-    var ndwiAfter = s2AfterFull.normalizedDifference(['B3', 'B8']).rename('NDWI_after');
-    
-    // Apply cloud mask using SCL if available
-    var s2BeforeMasked = ndwiBefore;
-    var s2AfterMasked = ndwiAfter;
-    
-    if (s2BeforeFull.bandNames().contains('SCL')) {
-      var sclBefore = s2BeforeFull.select('SCL');
-      var cloudMaskBefore = sclBefore.neq(3)  // Not cloud shadow
-        .and(sclBefore.neq(7))   // Not cloud
-        .and(sclBefore.neq(8))    // Not cloud shadow
-        .and(sclBefore.neq(9))    // Not cloud
-        .and(sclBefore.neq(10))   // Not cirrus
-        .and(sclBefore.neq(11));  // Not snow
-      s2BeforeMasked = ndwiBefore.updateMask(cloudMaskBefore);
-    }
-    
-    if (s2AfterFull.bandNames().contains('SCL')) {
-      var sclAfter = s2AfterFull.select('SCL');
-      var cloudMaskAfter = sclAfter.neq(3)
-        .and(sclAfter.neq(7))
-        .and(sclAfter.neq(8))
-        .and(sclAfter.neq(9))
-        .and(sclAfter.neq(10))
-        .and(sclAfter.neq(11));
-      s2AfterMasked = ndwiAfter.updateMask(cloudMaskAfter);
-    }
-  
-    // Water masks (NDWI > 0.3 threshold)
-    // Try lower threshold (0.2) for better detection of shallow/urban water
-    var ndwiThreshold = 0.2; // Lowered from 0.3 for better sensitivity
-    var waterBefore = s2BeforeMasked.gt(ndwiThreshold).rename('water');
-    var waterAfter = s2AfterMasked.gt(ndwiThreshold).rename('water');
-    
-    // Diagnostic: check water detection before flood logic
-    var waterBeforeCount = waterBefore.reduceRegion({
+  // Diagnostic: Check VH mask pixel count if available
+  if (bothHaveVH) {
+    var vhMaskCount = ee.Image(vhMask).reduceRegion({
       reducer: ee.Reducer.sum(),
-      geometry: focusAOI,
-      scale: 30,
-      bestEffort: true
-    }).get('water');
-    var waterAfterCount = waterAfter.reduceRegion({
-      reducer: ee.Reducer.sum(),
-      geometry: focusAOI,
-      scale: 30,
-      bestEffort: true
-    }).get('water');
-    print('S2 Water detection (NDWI > ' + ndwiThreshold + '):');
-    print('  Before-scene water pixels:', waterBeforeCount);
-    print('  After-scene water pixels:', waterAfterCount);
-    
-    // Flood = new water (water after but not before)
-    var s2FloodMask = waterAfter.and(waterBefore.not()).rename('flood');
-    
-    // Diagnostic: check flood mask before filtering
-    var floodBeforeFilter = s2FloodMask.reduceRegion({
-      reducer: ee.Reducer.sum(),
-      geometry: focusAOI,
-      scale: 30,
-      bestEffort: true
-    }).get('flood');
-    print('S2 Flood pixels (before filtering):', floodBeforeFilter);
-  
-    // For S2 validation, don't apply urban mask (flood can be anywhere)
-    // Urban mask is useful for S1 to reduce false positives, but for S2
-    // we want to see all flooding for validation purposes
-    // s2FloodMask = s2FloodMask.updateMask(urbanMask); // COMMENTED OUT for validation
-    
-    // Remove permanent water
-    s2FloodMask = s2FloodMask.updateMask(permanentWater.not());
-    
-    // Remove small patches (min 3 connected pixels)
-    s2FloodMask = s2FloodMask.updateMask(
-      s2FloodMask.connectedPixelCount(8, true).gte(3)
-    );
-    
-    // Clip to AOI
-    s2FloodMask = s2FloodMask.clip(focusAOI);
-    
-    // Diagnostic: check flood mask after all filtering
-    var floodAfterFilter = s2FloodMask.reduceRegion({
-      reducer: ee.Reducer.sum(),
-      geometry: focusAOI,
-      scale: 30,
-      bestEffort: true
-    }).get('flood');
-    print('S2 Flood pixels (after all filtering):', floodAfterFilter);
-  
-  // Diagnostic: count flood pixels and check cloud coverage
-  var s2FloodPixelCount = s2FloodMask.reduceRegion({
-    reducer: ee.Reducer.sum(),
-    geometry: focusAOI,
-    scale: 10,
-    bestEffort: true
-  }).get('flood');
-  print('S2 Flood mask pixel count (NDWI-based):', s2FloodPixelCount);
-  
-  // Check cloud coverage in S2 after image
-  if (s2AfterFull && s2AfterFull.bandNames().contains('SCL')) {
-    var sclAfter = s2AfterFull.select('SCL');
-    var cloudPixels = sclAfter.eq(3).or(sclAfter.eq(7)).or(sclAfter.eq(8))
-      .or(sclAfter.eq(9)).or(sclAfter.eq(10)).or(sclAfter.eq(11));
-    var cloudPercent = cloudPixels.reduceRegion({
-      reducer: ee.Reducer.mean(),
       geometry: focusAOI,
       scale: 100,
       bestEffort: true
-    }).get('SCL');
-    print('S2 After-scene cloud coverage (%):', ee.Number(cloudPercent).multiply(100));
+    }).get('flood');
+    print('VH flood mask pixels:', vhMaskCount);
   }
   
-  // Check if S2 after-scene date is reasonable
-  if (eventInfo.sentinel2.after && eventInfo.sentinel2.after.date) {
-    var eventDate = ee.Date(eventInfo.event_date || eventInfo.sentinel1.after.date);
-    var s2AfterDate = ee.Date(eventInfo.sentinel2.after.date);
-    var daysAfter = s2AfterDate.difference(eventDate, 'day');
-    print('S2 after-scene days after event:', daysAfter);
-  }
+  // Combine masks: if VH available, both must agree; otherwise use moderate VV threshold
+  // Use .multiply() instead of .and() for binary mask combination
+  floodMaskLayer = ee.Image(ee.Algorithms.If(
+    bothHaveVH,
+    vvMask.multiply(ee.Image(vhMask)), // Both VV and VH must agree (multiply = AND for binary)
+    vvChangeSmoothed.lt(-1.5) // Moderate VV-only threshold
+  )).rename('flood');
   
-  s2FloodMaskLayer = s2FloodMask.selfMask();
+  // Diagnostic: Check combined mask pixel count
+  var combinedMaskCount = floodMaskLayer.reduceRegion({
+    reducer: ee.Reducer.sum(),
+    geometry: focusAOI,
+    scale: 100,
+    bestEffort: true
+  }).get('flood');
+  print('Combined flood mask pixels (before urban/water masks):', combinedMaskCount);
   
-    // Optional: visualize NDWI for debugging
-    Map.addLayer(
-      ndwiBefore,
-      {min: -1, max: 1, palette: ['#d73027', '#f46d43', '#fdae61', '#fee08b', '#e6f598', '#abdda4', '#66c2a5', '#3288bd', '#5e4fa2']},
-      'S2 NDWI Before',
-      false
-    );
-    Map.addLayer(
-      ndwiAfter,
-      {min: -1, max: 1, palette: ['#d73027', '#f46d43', '#fdae61', '#fee08b', '#e6f598', '#abdda4', '#66c2a5', '#3288bd', '#5e4fa2']},
-      'S2 NDWI After',
-      false
-    );
-  } else {
-    print('S2 flood mask not available: need both before and after Sentinel-2 images');
-  }
+  // Apply urban and permanent water masks
+  // First, check how many pixels pass the threshold before filtering
+  var beforeFilterCount = floodMaskLayer.reduceRegion({
+    reducer: ee.Reducer.sum(),
+    geometry: focusAOI,
+    scale: 100,
+    bestEffort: true
+  }).get('flood');
+  print('Flood pixels before urban/water filtering:', beforeFilterCount);
+  
+  // Apply filters: only keep flood pixels in urban areas, exclude permanent water
+  floodMaskLayer = floodMaskLayer
+    .updateMask(urbanMask) // Only urban areas (WorldCover built OR NLCD impervious >=20%)
+    .updateMask(permanentWater.not()) // Exclude permanent water (JRC occurrence >=50%)
+    .clip(focusAOI);
+  
+  // Remove small speckle (isolated pixels) - keep only connected areas with at least 5 pixels
+  // This helps remove noise and false positives
+  floodMaskLayer = floodMaskLayer.updateMask(
+    floodMaskLayer.connectedPixelCount(8, true).gte(5)
+  );
+  
+  // Diagnostic: Check final mask pixel count after all filters
+  var finalMaskCount = floodMaskLayer.reduceRegion({
+    reducer: ee.Reducer.sum(),
+    geometry: focusAOI,
+    scale: 100,
+    bestEffort: true
+  }).get('flood');
+  print('Final flood mask pixels (after urban/water/speckle filters):', finalMaskCount);
+  
+  // Diagnostic: Check flood area percentage
+  var floodArea = floodMaskLayer.multiply(ee.Image.pixelArea()).reduceRegion({
+    reducer: ee.Reducer.sum(),
+    geometry: focusAOI,
+    scale: 100,
+    bestEffort: true
+  }).get('flood');
+  var totalArea = ee.Image.pixelArea().reduceRegion({
+    reducer: ee.Reducer.sum(),
+    geometry: focusAOI,
+    scale: 100,
+    bestEffort: true
+  }).get('area');
+  var floodPercent = ee.Number(floodArea).divide(ee.Number(totalArea)).multiply(100);
+  print('Flood area percentage:', floodPercent, '%');
+  
+  print('Flood mask created using:', ee.Algorithms.If(
+    bothHaveVH,
+    'VV AND VH (both must agree, threshold: -1.3 dB)',
+    'VV only (threshold: -1.5 dB)'
+  ));
+}
+
+// Sentinel-2 flood mask for validation
+if (s2Before && s2After) {
+  var s2BeforeFull = s2Before;
+  var s2AfterFull = s2After;
+  
+  // Calculate NDWI: (B3 - B8) / (B3 + B8)
+  var ndwiBefore = s2BeforeFull.normalizedDifference(['B3', 'B8']).rename('ndwi');
+  var ndwiAfter = s2AfterFull.normalizedDifference(['B3', 'B8']).rename('ndwi');
+  
+  // Water detection: NDWI > 0.2
+  var waterBefore = ndwiBefore.gt(0.2);
+  var waterAfter = ndwiAfter.gt(0.2);
+  
+  // Flood = water after AND NOT water before
+  var s2FloodMask = waterAfter.and(waterBefore.not()).rename('flood');
+  
+  // Apply permanent water mask (exclude permanent water)
+  s2FloodMaskLayer = s2FloodMask
+    .updateMask(permanentWater.not())
+    .clip(focusAOI);
+  
+  print('S2 flood mask created (NDWI > 0.2, change detection)');
 } else {
-  print('S2 flood mask not available: no Sentinel-2 imagery data in event');
+  print('S2 flood mask not available: need both before and after Sentinel-2 images');
 }
 
 // Add VH layers if VH is available in both images
@@ -2354,13 +1297,15 @@ if (!landsatBefore && !landsatAfter) {
 // Add flood masks last so they stay visible over optical/radar backdrops
 // S1 Flood Mask (red)
 if (floodMaskLayer) {
-  var floodFill = floodMaskLayer.visualize({
+  // Only visualize pixels where mask value is 1 (flood pixels)
+  // Use selfMask() to ensure only non-zero pixels are shown
+  var floodFill = floodMaskLayer.selfMask().visualize({
     palette: ['#e60000'], // red fill
     opacity: 0.55
   });
-  var floodOutline = floodMaskLayer
+  var floodOutline = floodMaskLayer.selfMask()
     .focal_max(40, 'circle', 'meters')
-    .subtract(floodMaskLayer)
+    .subtract(floodMaskLayer.selfMask())
     .selfMask()
     .visualize({palette: ['#8b0000'], opacity: 0.9}); // darker red outline
   var floodVis = ee.ImageCollection([floodFill, floodOutline]).mosaic();
@@ -2369,17 +1314,18 @@ if (floodMaskLayer) {
 
 // S2 Flood Mask (blue) - for visual comparison/validation
 if (s2FloodMaskLayer) {
-  var s2FloodFill = s2FloodMaskLayer.visualize({
+  // Only visualize pixels where mask value is 1 (flood pixels)
+  var s2FloodFill = s2FloodMaskLayer.selfMask().visualize({
     palette: ['#0066ff'], // blue fill
     opacity: 0.55
   });
-  var s2FloodOutline = s2FloodMaskLayer
+  var s2FloodOutline = s2FloodMaskLayer.selfMask()
     .focal_max(40, 'circle', 'meters')
-    .subtract(s2FloodMaskLayer)
+    .subtract(s2FloodMaskLayer.selfMask())
     .selfMask()
     .visualize({palette: ['#003399'], opacity: 0.9}); // darker blue outline
   var s2FloodVis = ee.ImageCollection([s2FloodFill, s2FloodOutline]).mosaic();
-  Map.addLayer(s2FloodVis, {}, 'S2 Flood Mask (NDWI, > 0.3)', true);
+  Map.addLayer(s2FloodVis, {}, 'S2 Flood Mask (NDWI, > 0.2)', true);
   
   // Print comparison info
   if (floodMaskLayer) {
@@ -2392,4 +1338,5 @@ if (s2FloodMaskLayer) {
 }
 
 // Add known flood location markers from NOAA data
-addFloodLocationMarkers(selectedEventId);
+// Pass both event ID and NOAA event IDs for composite event handling
+addFloodLocationMarkers(selectedEventId, eventInfo.noaa_event_ids);

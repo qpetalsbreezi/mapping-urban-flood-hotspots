@@ -1038,8 +1038,8 @@ if (beforeVV && afterVV) {
   
   // Create VV mask (threshold to detect flooding)
   // Negative change = backscatter decreased = flooding
-  // Use -1.3 dB threshold to detect moderate flooding
-  var vvMask = vvChangeSmoothed.lt(-1.3).rename('flood');
+  // Use -1.8 dB threshold to reduce false positives
+  var vvMask = vvChangeSmoothed.lt(-1.8).rename('flood');
   
   // Diagnostic: Check VV mask pixel count
   var vvMaskCount = vvMask.reduceRegion({
@@ -1063,7 +1063,7 @@ if (beforeVV && afterVV) {
   
   var vhMask = ee.Algorithms.If(
     bothHaveVH,
-    ee.Image(vhChangeSmoothed).lt(-1.3).rename('flood'), // Moderate threshold
+    ee.Image(vhChangeSmoothed).lt(-1.8).rename('flood'), // Stricter threshold
     ee.Image.constant(0).mask(ee.Image.constant(0)) // fully masked dummy
   );
   
@@ -1078,12 +1078,12 @@ if (beforeVV && afterVV) {
     print('VH flood mask pixels:', vhMaskCount);
   }
   
-  // Combine masks: if VH available, both must agree; otherwise use moderate VV threshold
+  // Combine masks: if VH available, both must agree; otherwise use stricter VV threshold
   // Use .multiply() instead of .and() for binary mask combination
   floodMaskLayer = ee.Image(ee.Algorithms.If(
     bothHaveVH,
     vvMask.multiply(ee.Image(vhMask)), // Both VV and VH must agree (multiply = AND for binary)
-    vvChangeSmoothed.lt(-1.5) // Moderate VV-only threshold
+    vvChangeSmoothed.lt(-2.0) // Stricter VV-only threshold
   )).rename('flood');
   
   // Diagnostic: Check combined mask pixel count
@@ -1144,8 +1144,8 @@ if (beforeVV && afterVV) {
   
   print('Flood mask created using:', ee.Algorithms.If(
     bothHaveVH,
-    'VV AND VH (both must agree, threshold: -1.3 dB)',
-    'VV only (threshold: -1.5 dB)'
+    'VV AND VH (both must agree, threshold: -1.8 dB)',
+    'VV only (threshold: -2.0 dB)'
   ));
 }
 
@@ -1309,7 +1309,7 @@ if (floodMaskLayer) {
     .selfMask()
     .visualize({palette: ['#8b0000'], opacity: 0.9}); // darker red outline
   var floodVis = ee.ImageCollection([floodFill, floodOutline]).mosaic();
-  Map.addLayer(floodVis, {}, 'S1 Flood Mask (SAR, < -1.3 dB)', true);
+  Map.addLayer(floodVis, {}, 'S1 Flood Mask (SAR, < -1.8 dB)', true);
 }
 
 // S2 Flood Mask (blue) - for visual comparison/validation

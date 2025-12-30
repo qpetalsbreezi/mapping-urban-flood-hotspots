@@ -730,31 +730,36 @@ function addFloodLocationMarkers(eventId, noaaEventIds) {
   var locations = [];
   var floodLocations = cityConfig[selectedCity].floodLocations || {};
   
-  // Check if composite event (multiple NOAA IDs separated by ';')
-  if (noaaEventIds.indexOf(';') >= 0) {
-    // Composite event - check all NOAA event IDs
-    var eventIdList = noaaEventIds.split(';');
-    for (var i = 0; i < eventIdList.length; i++) {
-      var id = eventIdList[i].trim();
-      if (floodLocations[id]) {
-        locations = locations.concat(floodLocations[id]);
-      }
-    }
+  // First, try the event ID directly (works for composite events like '721084_and_5_more')
+  if (floodLocations[eventId]) {
+    locations = floodLocations[eventId];
   } else {
-    // Single event - use the NOAA event ID
-    var checkId = noaaEventIds.trim();
-    if (floodLocations[checkId]) {
-      locations = floodLocations[checkId];
-    } else if (floodLocations[eventId]) {
-      // Fallback to event ID if NOAA ID not found
-      locations = floodLocations[eventId];
+    // Check if composite event (multiple NOAA IDs separated by ';')
+    if (noaaEventIds.indexOf(';') >= 0) {
+      // Composite event - check all NOAA event IDs
+      var eventIdList = noaaEventIds.split(';');
+      for (var i = 0; i < eventIdList.length; i++) {
+        var id = eventIdList[i].trim();
+        if (floodLocations[id]) {
+          locations = locations.concat(floodLocations[id]);
+        }
+      }
+    } else {
+      // Single event - use the NOAA event ID
+      var checkId = noaaEventIds.trim();
+      if (floodLocations[checkId]) {
+        locations = floodLocations[checkId];
+      }
     }
   }
   
   if (!locations || locations.length === 0) {
     print('No location data available for event ' + eventId + ' (NOAA IDs: ' + noaaEventIds + ')');
+    print('  Available flood location keys:', Object.keys(floodLocations));
     return;
   }
+  
+  print('Found ' + locations.length + ' flood locations for event ' + eventId);
   
   var features = locations.map(function(loc) {
     return ee.Feature(
@@ -764,6 +769,17 @@ function addFloodLocationMarkers(eventId, noaaEventIds) {
   });
   
   var locationCollection = ee.FeatureCollection(features);
+  
+  // Diagnostic: Check how many features are within the AOI
+  var featuresInAOI = locationCollection.filterBounds(focusAOI);
+  var countInAOI = featuresInAOI.size();
+  print('  Features within AOI:', countInAOI, 'out of', locations.length);
+  if (countInAOI.lt(locations.length)) {
+    print('  Note: Some locations are outside the AOI and may not be visible in the current map view');
+  }
+  
+  // Add all markers (even if outside AOI) - they'll show if the map view includes them
+  // The map might need to be zoomed out or panned to see all markers
   
   // Add point markers
   Map.addLayer(

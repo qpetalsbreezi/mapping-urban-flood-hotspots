@@ -9,8 +9,13 @@
 // ============================================================================
 // USER SETTINGS
 // ============================================================================
+
+// var selectedCity = 'raleigh'; // 'raleigh' or 'houston'
+// var selectedEventIndex = 4;   // 1-based index within the chosen city
+
 var selectedCity = 'houston'; // 'raleigh' or 'houston'
 var selectedEventIndex = 5;   // 1-based index within the chosen city
+
 var opticalWindowDays = 10;
 
 // City-specific configuration (AOI, zoom, and optional highlight boxes)
@@ -681,6 +686,32 @@ var eventsByCity = {
             "after": null
         }
     }
+,
+    {
+        "id": "control_2024-10-15",
+        "label": "Houston CONTROL (no flood) 2024-10-15",
+        "event_date": "2024-10-15",
+        "noaa_event_ids": "none",
+        "noaa_event_count": "0",
+        "sentinel1": {
+            "before": {
+                "date": "2024-10-03",
+                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20241003T002718_20241003T002743_055931_06D696_ACEF"
+            },
+            "after": {
+                "date": "2024-10-15",
+                "imageId": "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20241015T002719_20241015T002744_056106_06DD72_7C83"
+            }
+        },
+        "sentinel2": {
+            "before": null,
+            "after": null
+        },
+        "landsat": {
+            "before": null,
+            "after": null
+        }
+    }
   ]
 };
 
@@ -814,7 +845,9 @@ var selectedEventId = selectedEvent.id;
 var eventInfo = selectedEvent;
 print('Selected event [' + selectedEventIndex + '/' + events.length + ']:', eventInfo.label);
 print('  Event ID:', eventInfo.id);
-if (parseInt(eventInfo.noaa_event_count) > 1) {
+if (eventInfo.noaa_event_ids === 'none' || parseInt(eventInfo.noaa_event_count) === 0) {
+  print('  CONTROL EVENT (no flood) - for comparison with flood events');
+} else if (parseInt(eventInfo.noaa_event_count) > 1) {
   print('  NOAA Event IDs (composite):', eventInfo.noaa_event_ids, '(' + eventInfo.noaa_event_count + ' events)');
 }
 print('  Event Date:', eventInfo.event_date);
@@ -859,26 +892,29 @@ function loadSentinel1(imageId, eventDate) {
   
   // Check if we need to mosaic (for Houston, multiple passes may be needed)
   // Query all S1 images within 1-day window around the event date
-  var eventDateObj = ee.Date(eventDate);
-  var startDate = eventDateObj.advance(-1, 'day');
-  var endDate = eventDateObj.advance(1, 'day');
-  
-  var s1Collection = ee.ImageCollection('COPERNICUS/S1_GRD')
-    .filterBounds(focusAOI)
-    .filterDate(startDate, endDate)
-    .filter(ee.Filter.listContains('system:band_names', 'VV'));
-  
-  var count = s1Collection.size();
-  
-  // If multiple images, mosaic them for full coverage
-  // Otherwise, use the specific image
-  var result = ee.Algorithms.If(
-    count.gt(1),
-    s1Collection.mosaic(), // Multiple images - mosaic them for full coverage
-    specificImage // Use the specific image ID
-  );
-  
-  return ee.Image(result);
+  if (eventDate) {
+    var eventDateObj = ee.Date(eventDate);
+    var startDate = eventDateObj.advance(-1, 'day');
+    var endDate = eventDateObj.advance(1, 'day');
+    
+    var s1Collection = ee.ImageCollection('COPERNICUS/S1_GRD')
+      .filterBounds(focusAOI)
+      .filterDate(startDate, endDate)
+      .filter(ee.Filter.listContains('system:band_names', 'VV'));
+    
+    var count = s1Collection.size();
+    
+    // If multiple images, mosaic them for full coverage
+    // Otherwise, use the specific image
+    var result = ee.Algorithms.If(
+      count.gt(1),
+      s1Collection.mosaic(), // Multiple images - mosaic them for full coverage
+      specificImage // Use the specific image ID
+    );
+    
+    return ee.Image(result);
+  }
+  return specificImage;
 }
 
 function loadSentinel2(imageId) {
@@ -908,10 +944,14 @@ function loadLandsat(imageId) {
 }
 
 // Load images
-var before = loadSentinel1(eventInfo.sentinel1.before && eventInfo.sentinel1.before.imageId, 
-                          eventInfo.sentinel1.before && eventInfo.sentinel1.before.date);
-var after = loadSentinel1(eventInfo.sentinel1.after && eventInfo.sentinel1.after.imageId,
-                          eventInfo.sentinel1.after && eventInfo.sentinel1.after.date);
+// For control events, imageId may be null but date should be provided
+var beforeImageId = eventInfo.sentinel1.before && eventInfo.sentinel1.before.imageId;
+var beforeDate = eventInfo.sentinel1.before && eventInfo.sentinel1.before.date;
+var afterImageId = eventInfo.sentinel1.after && eventInfo.sentinel1.after.imageId;
+var afterDate = eventInfo.sentinel1.after && eventInfo.sentinel1.after.date;
+
+var before = loadSentinel1(beforeImageId, beforeDate);
+var after = loadSentinel1(afterImageId, afterDate);
 var s2Before = loadSentinel2(eventInfo.sentinel2.before && eventInfo.sentinel2.before.imageId);
 var s2After = loadSentinel2(eventInfo.sentinel2.after && eventInfo.sentinel2.after.imageId);
 var landsatBefore = loadLandsat(eventInfo.landsat.before && eventInfo.landsat.before.imageId);

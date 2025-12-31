@@ -18,6 +18,13 @@ var selectedEventIndex = 5;   // 1-based index within the chosen city
 
 var opticalWindowDays = 10;
 
+// Multi-image baseline: average multiple pre-event images for more stable baseline
+// Set to true to enable averaging 3-5 pre-event images (reduces speckle noise)
+// Set to false to use single closest pre-event image (current behavior, default)
+var useMultiImageBaseline = false;
+var multiImageDaysBefore = 30;  // Days before event to search for pre-event images
+var multiImageMaxCount = 5;   // Maximum number of images to average
+
 // City-specific configuration (AOI, zoom, and optional highlight boxes)
 var cityConfig = {
   raleigh: {
@@ -917,6 +924,56 @@ function loadSentinel1(imageId, eventDate) {
   return specificImage;
 }
 
+// Load multiple pre-event Sentinel-1 images and average them for stable baseline
+// This reduces speckle noise and creates a more robust reference image
+// Only averages images with the same orbit configuration (orbit direction, relative orbit, pass)
+function loadSentinel1MultiImageBaseline(imageId, eventDate, beforeDate) {
+  // Fallback to single image if required parameters are missing
+  if (!imageId || !eventDate || !beforeDate) {
+    return loadSentinel1(imageId, eventDate);
+  }
+  
+  // First, get the orbit configuration from the reference image (beforeDate image)
+  var referenceImage = ee.Image(imageId);
+  var referenceOrbitPass = referenceImage.get('orbitProperties_pass'); // ASCENDING or DESCENDING
+  var referenceOrbitNumber = referenceImage.get('relativeOrbitNumber_start');
+  
+  var eventDateObj = ee.Date(eventDate);
+  var beforeDateObj = ee.Date(beforeDate);
+  
+  // Search for pre-event images in the window before the event
+  // Use the beforeDate as the end of the search window
+  var searchStartDate = beforeDateObj.advance(-multiImageDaysBefore, 'day');
+  var searchEndDate = beforeDateObj.advance(1, 'day'); // Include the beforeDate image
+  
+  // Filter to only images with the same orbit configuration as the reference image
+  // This ensures consistent viewing geometry across all averaged images
+  var preEventCollection = ee.ImageCollection('COPERNICUS/S1_GRD')
+    .filterBounds(focusAOI)
+    .filterDate(searchStartDate, searchEndDate)
+    .filter(ee.Filter.listContains('system:band_names', 'VV'))
+    .filter(ee.Filter.eq('orbitProperties_pass', referenceOrbitPass)) // Same orbit direction
+    .filter(ee.Filter.eq('relativeOrbitNumber_start', referenceOrbitNumber)) // Same relative orbit
+    .sort('system:time_start', false) // Most recent first
+    .limit(multiImageMaxCount);
+  
+  var count = preEventCollection.size();
+  
+  // If we have multiple images with same orbit config, average them; otherwise use single image
+  // The reference image itself should be included in the collection (within date range)
+  var result = ee.Algorithms.If(
+    count.gt(1),
+    preEventCollection.mean(), // Average multiple images for stable baseline
+    ee.Algorithms.If(
+      count.eq(1),
+      preEventCollection.first(), // Single image found (should be the reference image)
+      loadSentinel1(imageId, eventDate) // Fallback to single image method if no matches
+    )
+  );
+  
+  return ee.Image(result);
+}
+
 function loadSentinel2(imageId) {
   if (!imageId) return null;
   return maskS2Clouds(ee.Image(imageId));
@@ -950,7 +1007,10 @@ var beforeDate = eventInfo.sentinel1.before && eventInfo.sentinel1.before.date;
 var afterImageId = eventInfo.sentinel1.after && eventInfo.sentinel1.after.imageId;
 var afterDate = eventInfo.sentinel1.after && eventInfo.sentinel1.after.date;
 
-var before = loadSentinel1(beforeImageId, beforeDate);
+// Use multi-image baseline if enabled, otherwise use single image (current behavior)
+var before = useMultiImageBaseline 
+  ? loadSentinel1MultiImageBaseline(beforeImageId, eventInfo.event_date, beforeDate)
+  : loadSentinel1(beforeImageId, beforeDate);
 var after = loadSentinel1(afterImageId, afterDate);
 var s2Before = loadSentinel2(eventInfo.sentinel2.before && eventInfo.sentinel2.before.imageId);
 var s2After = loadSentinel2(eventInfo.sentinel2.after && eventInfo.sentinel2.after.imageId);
@@ -987,6 +1047,10 @@ var s2FloodMaskLayer = null;
 
 // Sentinel-1 VV/VH in dB plus difference/ratio helpers for debugging flood signal
 print('Has S1 before:', !!before, 'Has S1 after:', !!after);
+if (useMultiImageBaseline) {
+  print('Multi-image baseline enabled: averaging up to', multiImageMaxCount, 'pre-event images from', multiImageDaysBefore, 'days before event');
+  print('  Only images with same orbit configuration (pass direction and relative orbit) will be averaged');
+}
 
 // Log the actual S1 system IDs to verify correct scenes are loaded per event
 if (before || after) {

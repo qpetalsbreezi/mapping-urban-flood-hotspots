@@ -25,6 +25,32 @@ var useMultiImageBaseline = false;
 var multiImageDaysBefore = 30;  // Days before event to search for pre-event images
 var multiImageMaxCount = 5;   // Maximum number of images to average
 
+// ============================================================================
+// FLOOD DETECTION PARAMETERS (SHARED WITH generate_flood_hotspots.js)
+// ============================================================================
+// IMPORTANT: These parameters must match generate_flood_hotspots.js exactly
+// to ensure consistent flood detection across both scripts.
+
+var FLOOD_DETECTION_CONFIG = {
+  // Speckle filtering
+  smoothRadius: 90,  // meters - radius for focal_mean smoothing
+  
+  // Change detection thresholds (dB)
+  vvVhThreshold: -1.8,  // dB - threshold when both VV and VH are available
+  vvOnlyThreshold: -2.0,  // dB - stricter threshold when only VV is available
+  
+  // Speckle removal
+  minConnectedPixels: 5,  // minimum connected pixels to keep (removes isolated noise)
+  connectedNeighborhood: 8,  // 8-connected neighborhood for pixel counting
+  
+  // Urban mask
+  nlcdImperviousThreshold: 0.2,  // >=20% impervious surface
+  worldCoverBuiltClass: 50,  // WorldCover built-up class value
+  
+  // Permanent water exclusion
+  jrcWaterOccurrenceThreshold: 50  // >=50% occurrence = permanent water
+};
+
 // City-specific configuration (AOI, zoom, and optional highlight boxes)
 var cityConfig = {
   raleigh: {
@@ -1027,19 +1053,19 @@ if (landsatAfter) landsatAfter = landsatAfter.clip(focusAOI);
 
 // Urban reference mask (built-up OR >=20% impervious) for context
 var worldCover = ee.Image('ESA/WorldCover/v200/2021').select('Map').rename('landcover');
-var worldCoverBuilt = worldCover.eq(50); // WorldCover built class
+var worldCoverBuilt = worldCover.eq(FLOOD_DETECTION_CONFIG.worldCoverBuiltClass);
 var nlcdImpervious = ee.Image('USGS/NLCD_RELEASES/2021_REL/NLCD/2021')
   .select('impervious')
   .divide(100);
 var nlcdImperviousMask = nlcdImpervious
   .updateMask(nlcdImpervious.mask())
-  .gte(0.2); // >=20% impervious
+  .gte(FLOOD_DETECTION_CONFIG.nlcdImperviousThreshold);
 var urbanMask = worldCoverBuilt.or(nlcdImperviousMask);
 
 // Permanent water mask for reference (not applied to flood mask yet)
 var jrcWater = ee.Image('JRC/GSW1_4/GlobalSurfaceWater').select('occurrence');
 // Unmask to 0 so the mask doesn't disappear where JRC has nodata
-var permanentWater = jrcWater.gte(50).unmask(0).rename('perm_water'); // occurrence >=50%
+var permanentWater = jrcWater.gte(FLOOD_DETECTION_CONFIG.jrcWaterOccurrenceThreshold).unmask(0).rename('perm_water');
 
 // Holder for the flood mask so we can overlay it last (above optical layers)
 var floodMaskLayer = null;
@@ -1133,9 +1159,8 @@ if (beforeVV && afterVV) {
   );
 
   // Smoothed change (basic speckle reduction) and flood mask
-  var smoothRadius = 90; // meters
-  var beforeVVSmoothed = beforeVV.focal_mean(smoothRadius, 'circle', 'meters');
-  var afterVVSmoothed = afterVV.focal_mean(smoothRadius, 'circle', 'meters');
+  var beforeVVSmoothed = beforeVV.focal_mean(FLOOD_DETECTION_CONFIG.smoothRadius, 'circle', 'meters');
+  var afterVVSmoothed = afterVV.focal_mean(FLOOD_DETECTION_CONFIG.smoothRadius, 'circle', 'meters');
   var vvChangeSmoothed = afterVVSmoothed.subtract(beforeVVSmoothed);
 
   Map.addLayer(
@@ -1147,7 +1172,7 @@ if (beforeVV && afterVV) {
 
   // Flood mask: Hybrid approach
   // If VH is available: use VV AND VH (both must agree) - more accurate
-  // If VH not available: use VV with stricter threshold (-1.5 dB) - reduces false positives
+  // If VH not available: use VV with stricter threshold (-2.0 dB) - reduces false positives
   
   // Check if VH exists in both images
   var beforeBands = before.bandNames();
@@ -1158,8 +1183,7 @@ if (beforeVV && afterVV) {
   
   // Create VV mask (threshold to detect flooding)
   // Negative change = backscatter decreased = flooding
-  // Use -1.8 dB threshold to reduce false positives
-  var vvMask = vvChangeSmoothed.lt(-1.8).rename('flood');
+  var vvMask = vvChangeSmoothed.lt(FLOOD_DETECTION_CONFIG.vvVhThreshold).rename('flood');
   
   // Diagnostic: Check VV mask pixel count
   var vvMaskCount = vvMask.reduceRegion({
@@ -1176,14 +1200,14 @@ if (beforeVV && afterVV) {
   var vhChangeSmoothed = ee.Algorithms.If(
     bothHaveVH,
     ee.Image(toDbSafe(after, 'VH'))
-      .focal_mean(smoothRadius, 'circle', 'meters')
-      .subtract(ee.Image(toDbSafe(before, 'VH')).focal_mean(smoothRadius, 'circle', 'meters')),
+      .focal_mean(FLOOD_DETECTION_CONFIG.smoothRadius, 'circle', 'meters')
+      .subtract(ee.Image(toDbSafe(before, 'VH')).focal_mean(FLOOD_DETECTION_CONFIG.smoothRadius, 'circle', 'meters')),
     ee.Image.constant(0) // dummy value, won't be used
   );
   
   var vhMask = ee.Algorithms.If(
     bothHaveVH,
-    ee.Image(vhChangeSmoothed).lt(-1.8).rename('flood'), // Stricter threshold
+    ee.Image(vhChangeSmoothed).lt(FLOOD_DETECTION_CONFIG.vvVhThreshold).rename('flood'),
     ee.Image.constant(0).mask(ee.Image.constant(0)) // fully masked dummy
   );
   
@@ -1203,7 +1227,7 @@ if (beforeVV && afterVV) {
   floodMaskLayer = ee.Image(ee.Algorithms.If(
     bothHaveVH,
     vvMask.multiply(ee.Image(vhMask)), // Both VV and VH must agree (multiply = AND for binary)
-    vvChangeSmoothed.lt(-2.0) // Stricter VV-only threshold
+    vvChangeSmoothed.lt(FLOOD_DETECTION_CONFIG.vvOnlyThreshold) // Stricter VV-only threshold
   )).rename('flood');
   
   // Diagnostic: Check combined mask pixel count
@@ -1234,7 +1258,8 @@ if (beforeVV && afterVV) {
   // Remove small speckle (isolated pixels) - keep only connected areas with at least 5 pixels
   // This helps remove noise and false positives
   floodMaskLayer = floodMaskLayer.updateMask(
-    floodMaskLayer.connectedPixelCount(8, true).gte(5)
+    floodMaskLayer.connectedPixelCount(FLOOD_DETECTION_CONFIG.connectedNeighborhood, true)
+      .gte(FLOOD_DETECTION_CONFIG.minConnectedPixels)
   );
   
   // Diagnostic: Check final mask pixel count after all filters
@@ -1264,8 +1289,8 @@ if (beforeVV && afterVV) {
   
   print('Flood mask created using:', ee.Algorithms.If(
     bothHaveVH,
-    'VV AND VH (both must agree, threshold: -1.8 dB)',
-    'VV only (threshold: -2.0 dB)'
+    'VV AND VH (both must agree, threshold: ' + FLOOD_DETECTION_CONFIG.vvVhThreshold + ' dB)',
+    'VV only (threshold: ' + FLOOD_DETECTION_CONFIG.vvOnlyThreshold + ' dB)'
   ));
 }
 

@@ -1,0 +1,86 @@
+Flood Hotspot Mapping Algorithm: Methodology and Implementation
+
+OVERVIEW
+
+Methodology for generating flood hotspot maps using multiple satellite and geospatial datasets in Google Earth Engine. The algorithm aggregates flood detections across multiple historical events for Raleigh, North Carolina and Houston, Texas, using Sentinel-1 SAR data for primary flood detection, with optical imagery and land cover datasets for spatial filtering.
+
+Data Sources
+
+Flood Event Data:
+- NOAA Storm Events Database - documented flood events with dates, locations, and impacts
+- USGS stream gage data - water level measurements for event validation (Crabtree Creek Station 02087324 for Raleigh, Buffalo Bayou Station 08073700 for Houston)
+
+Satellite Imagery:
+- Sentinel-1 SAR (COPERNICUS/S1_GRD) - primary flood detection using VV and VH polarizations
+- Sentinel-2 (COPERNICUS/S2_SR) - optical imagery for comparison
+- Landsat 8 (LANDSAT/LC08/C02/T1_L2) - optical imagery for comparison
+
+Land Cover and Water Data:
+- ESA WorldCover (v200, 2021) - built-up area classification for urban masking
+- USGS NLCD (2021) - impervious surface percentage for urban masking
+- JRC Global Surface Water (GSW1_4) - permanent water occurrence for excluding lakes, rivers, and reservoirs
+
+ALGORITHM STEPS
+
+STEP 1: Event Selection and Validation
+
+Flood events are extracted from the NOAA Storm Events Database. For Raleigh, events are from Wake County (2010-2025). For Houston, events are from Harris County (2010-2025). NOAA data includes event dates, locations, and documented impacts.
+
+Events are cross-referenced with USGS stream gage data. For Raleigh, the Crabtree Creek gage (Station 02087324) must show water levels exceeding 10 feet. For Houston, the Buffalo Bayou gage (Station 08073700) must show water levels exceeding 40 feet.
+
+Events are selected if they have both NOAA documentation and USGS validation, and have available Sentinel-1 SAR imagery. This process identified 5 events for Raleigh and 11 events for Houston (including one control event with no documented flooding).
+
+STEP 2: Satellite Imagery Matching
+
+Sentinel-1 images are matched to each flood event by searching within a 30-day window before the event and up to 2 days after the event.
+
+Images are matched by orbit configuration (same pass direction and relative orbit number) for consistent viewing geometry. The algorithm selects the earliest available post-event image, then finds the closest pre-event image with matching orbit configuration.
+
+Events that share identical satellite imagery are deduplicated into composite events, preserving all associated NOAA event identifiers.
+
+An optional multi-image baseline feature averages multiple pre-event images (up to 5 images within 30 days) with matching orbit configurations. This feature is disabled by default; single-image baselines are used.
+
+STEP 3: Preprocessing and Speckle Filtering
+
+Focal mean smoothing with a 90-meter circular radius is applied to both pre-event and post-event images to reduce speckle noise. Smoothing is applied independently to both images before change detection.
+
+STEP 4: Change Detection Methodology
+
+Change detection is performed by subtracting the pre-event image from the post-event image, with both images in decibel (dB) scale. Negative values indicate decreased backscatter (potential flooding).
+
+Change detection is performed on both VV and VH polarizations when available. Both images must have the same polarization bands for dual-polarization detection.
+
+STEP 5: Hybrid Threshold-Based Flood Detection
+
+When both VV and VH polarizations are available, both must independently exceed a threshold of -1.8 dB decrease. When only VV is available, a stricter threshold of -2.0 dB is applied.
+
+Thresholds determined through iterative refinement based on visual inspection against known flood locations from NOAA reports.
+
+STEP 6: Spatial Filtering and Masking
+
+The urban mask combines two data sources: ESA WorldCover (version 200, year 2021) built-up class (class 50) and USGS NLCD impervious surface data (≥20% impervious). Pixels meeting either criterion are included.
+
+Permanent water bodies are excluded using JRC Global Surface Water dataset (water occurrence ≥50%).
+
+Both masks are applied. Only pixels within urban areas and not permanent water are classified as flooded.
+
+STEP 7: Speckle Removal and Noise Filtering
+
+Connected component analysis removes isolated noise pixels. An 8-connected neighborhood is used, and flood areas must contain at least 5 connected pixels to be retained.
+
+STEP 8: Event Aggregation and Frequency Mapping
+
+Individual binary flood masks (1=flood, 0=no flood) for each event are summed to create a frequency map. Each pixel value represents how many events detected flooding at that location, ranging from 0 to the total number of events.
+
+STEP 9: Hotspot Classification and Visualization
+
+Frequency values are classified into discrete categories: frequency 1 = yellow, frequencies 2-3 = orange, frequency 4+ = red. The hotspot map is displayed as a 70% opacity overlay on a base map.
+
+Key Algorithm Parameters
+
+- Smoothing radius: 90 meters
+- VV+VH threshold: -1.8 dB (when both polarizations available)
+- VV-only threshold: -2.0 dB (single-polarization data)
+- Minimum connected pixels: 5 pixels
+- Urban threshold: ≥20% impervious surface OR WorldCover built-up class (class 50)
+- Permanent water threshold: ≥50% water occurrence

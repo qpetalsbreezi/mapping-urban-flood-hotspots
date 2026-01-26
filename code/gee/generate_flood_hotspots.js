@@ -854,21 +854,21 @@ print('Events with valid flood masks:', maskList.length);
 var frequencyMap = ee.ImageCollection.fromImages(maskList).sum().rename('frequency');
 
 // Apply discrete color mapping
-// 0 = transparent (masked), 1 = yellow, 2-3 = orange, 4+ = red
+// 0 = transparent (masked), 1 = orange, 2-3 = red, 4+ = dark red
 // Use expression to map frequency values to color indices
 var hotspotMap = frequencyMap.expression(
   '(freq == 0) ? 0 : ' +  // 0 = transparent (will be masked)
-  '(freq == 1) ? 1 : ' +  // 1 = yellow
-  '(freq >= 2 && freq <= 3) ? 2 : ' +  // 2-3 = orange
-  '(freq >= 4) ? 3 : 0',  // 4+ = red
+  '(freq == 1) ? 1 : ' +  // 1 = orange
+  '(freq >= 2 && freq <= 3) ? 2 : ' +  // 2-3 = red
+  '(freq >= 4) ? 3 : 0',  // 4+ = dark red
   {freq: frequencyMap}
 ).rename('hotspot_class');
 
 // Mask out zeros (no detections)
 hotspotMap = hotspotMap.updateMask(hotspotMap.gt(0));
 
-// Color palette: [yellow, orange, red]
-var hotspotPalette = ['FFEB3B', 'FF9800', 'F44336'];
+// Color palette: [orange, red, dark red]
+var hotspotPalette = ['FF9800', 'FF5252', 'D32F2F'];
 
 // Add hotspot map to map
 Map.addLayer(

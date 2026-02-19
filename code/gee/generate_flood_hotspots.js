@@ -73,7 +73,26 @@ var cityConfig = {
       [-78.9, 35.6]
     ],
     focusBuffer: -5000, // tighten AOI for visualization
-    centerZoom: 13
+    centerZoom: 13,
+    floodLocations: {
+      '755610': [
+        {lat: 35.89, lon: -78.71, desc: 'Begin: Crabtree Valley Mall area'},
+        {lat: 35.82, lon: -78.71, desc: 'End: Crabtree Creek overflow'},
+        {lat: 35.85, lon: -78.70, desc: 'Crabtree Valley Mall (approx)'},
+        {lat: 35.86, lon: -78.68, desc: 'Newton Road near Six Forks Road (approx)'},
+        {lat: 35.88, lon: -78.71, desc: 'Leesville Road & Millbrook Road (approx)'}
+      ],
+      '775032': [{lat: 35.8, lon: -78.61, desc: 'North Raleigh Boulevard near Millbank Street'}],
+      '775034': [{lat: 35.79, lon: -78.64, desc: 'Peace Street and Capitol Boulevard'}],
+      '775037': [{lat: 35.8148, lon: -78.6198, desc: 'Atlantic Avenue at Hodges Street'}],
+      '775029': [{lat: 35.6332, lon: -78.7092, desc: 'Banks Road and Ten Ten Road'}],
+      '775031': [{lat: 35.7294, lon: -78.6466, desc: 'Gideon Creek Way near Durham Drive'}],
+      '781167': [{lat: 35.8049, lon: -78.623, desc: 'Wake Forest Road near Georgetown Road'}],
+      '1029187': [{lat: 35.7864, lon: -78.7353, desc: 'Wolf Creek Circle'}],
+      '1173317': [{lat: 35.7794, lon: -78.6435, desc: 'Union Station (S West St & W Martin St)'}],
+      '1208861': [{lat: 35.7742, lon: -78.6469, desc: 'Union Station (West St & Martin St)'}],
+      '1208432': [{lat: 35.77, lon: -78.73, desc: 'I-440 eastbound (closed)'}]
+    }
   },
   houston: {
     outerAOICoords: [
@@ -84,7 +103,64 @@ var cityConfig = {
       [-95.6, 29.6]
     ],
     focusBuffer: 0, // No buffer - use full AOI
-    centerZoom: 11
+    centerZoom: 11,
+    floodLocations: {
+      '579534': [
+        {lat: 30.1143, lon: -95.4547, desc: 'SPRING'},
+        {lat: 29.5997, lon: -95.6387, desc: 'HOUSTON HULL ARPT'}
+      ],
+      '675235_and_1_more': [
+        {lat: 29.5897, lon: -95.4473, desc: 'ALMEDA'},
+        {lat: 29.7156, lon: -95.2048, desc: 'PASADENA'},
+        {lat: 29.7598, lon: -95.3668, desc: 'ENGLEWOOD'},
+        {lat: 29.6487, lon: -95.5412, desc: 'MISSOURI CITY'}
+      ],
+      '710731': [
+        {lat: 29.7758, lon: -95.5879, desc: 'HERMOSSEY'},
+        {lat: 29.7878, lon: -95.3474, desc: 'ENGLEWOOD'}
+      ],
+      '710726_and_1_more': [
+        {lat: 29.8919, lon: -95.3761, desc: 'LITTLE YORK'},
+        {lat: 29.8169, lon: -95.165, desc: 'FAUNA'},
+        {lat: 29.7227, lon: -95.465, desc: 'BELLAIRE JCT'},
+        {lat: 29.88, lon: -95.4626, desc: 'GORDEN PARK'}
+      ],
+      '721084_and_5_more': [
+        {lat: 29.8067, lon: -95.4204, desc: 'WHITE OAK ACRES'},
+        {lat: 29.7525, lon: -95.4228, desc: 'HOUSTON HGTS'},
+        {lat: 30.1431, lon: -95.7622, desc: 'TOMBALL'},
+        {lat: 30.131, lon: -95.4135, desc: 'SPRING'},
+        {lat: 30.0375, lon: -95.4187, desc: 'WESTFIELD'}
+      ],
+      '830461_and_1_more': [
+        {lat: 29.8976, lon: -95.8261, desc: 'KATY'},
+        {lat: 29.6927, lon: -95.8523, desc: 'DELHI'},
+        {lat: 29.9508, lon: -95.3076, desc: 'TODD MISSION'},
+        {lat: 29.9301, lon: -95.3137, desc: 'TODD MISSION'}
+      ],
+      '857803_and_4_more': [
+        {lat: 29.6666, lon: -95.1575, desc: 'GOLDEN ACRES'},
+        {lat: 29.6666, lon: -95.1538, desc: 'GOLDEN ACRES'},
+        {lat: 30.0579, lon: -95.1776, desc: 'HUMBLE'},
+        {lat: 30.0755, lon: -95.1071, desc: 'HUFFMAN'},
+        {lat: 29.963, lon: -95.3391, desc: '(IAH)HOUSTON INTL AR'}
+      ],
+      '899524': [
+        {lat: 29.79, lon: -95.82, desc: 'KATY'},
+        {lat: 29.8685, lon: -95.6419, desc: 'HOUSTON LAKESIDE ARP'}
+      ],
+      '963117': [
+        {lat: 29.82, lon: -95.34, desc: 'SETTEGAST'},
+        {lat: 29.8231, lon: -95.3407, desc: 'SETTEGAST'}
+      ],
+      '1004355_and_4_more': [
+        {lat: 29.78, lon: -95.54, desc: 'HERMOSSEY'},
+        {lat: 29.7881, lon: -95.5383, desc: 'HERMOSSEY'},
+        {lat: 29.8228, lon: -95.5298, desc: 'SPRING BRANCH'},
+        {lat: 29.8224, lon: -95.5203, desc: 'SPRING BRANCH'},
+        {lat: 29.8198, lon: -95.5015, desc: 'SPRING BRANCH'}
+      ]
+    }
   }
 };
 
@@ -813,7 +889,16 @@ function generateFloodMask(eventInfo) {
     vvChangeSmoothed.lt(thresholdVvOnly)
   )).rename('flood');
   
-  // Apply filters
+  // Pre-urban mask for NOAA validation (threshold + permanent water + speckle; no urban)
+  var floodMaskPreUrban = floodMask
+    .updateMask(permanentWater.not())
+    .clip(focusAOI);
+  floodMaskPreUrban = floodMaskPreUrban.updateMask(
+    floodMaskPreUrban.connectedPixelCount(FLOOD_DETECTION_CONFIG.connectedNeighborhood, true)
+      .gte(FLOOD_DETECTION_CONFIG.minConnectedPixels)
+  );
+  
+  // Apply urban and permanent water for hotspot mask
   floodMask = floodMask
     .updateMask(urbanMask)
     .updateMask(permanentWater.not())
@@ -825,7 +910,7 @@ function generateFloodMask(eventInfo) {
       .gte(FLOOD_DETECTION_CONFIG.minConnectedPixels)
   );
   
-  return floodMask;
+  return { mask: floodMask, maskPreUrban: floodMaskPreUrban };
 }
 
 // Same as generateFloodMask but uses scene-adaptive threshold (percentile of VV change, clamped)
@@ -908,6 +993,14 @@ function generateFloodMaskAdaptive(eventInfo) {
     vvChangeSmoothed.lt(thresholdVvOnly)
   )).rename('flood');
   
+  var floodMaskPreUrban = floodMask
+    .updateMask(permanentWater.not())
+    .clip(focusAOI);
+  floodMaskPreUrban = floodMaskPreUrban.updateMask(
+    floodMaskPreUrban.connectedPixelCount(FLOOD_DETECTION_CONFIG.connectedNeighborhood, true)
+      .gte(FLOOD_DETECTION_CONFIG.minConnectedPixels)
+  );
+  
   floodMask = floodMask
     .updateMask(urbanMask)
     .updateMask(permanentWater.not())
@@ -916,7 +1009,31 @@ function generateFloodMaskAdaptive(eventInfo) {
     floodMask.connectedPixelCount(FLOOD_DETECTION_CONFIG.connectedNeighborhood, true)
       .gte(FLOOD_DETECTION_CONFIG.minConnectedPixels)
   );
-  return floodMask;
+  return { mask: floodMask, maskPreUrban: floodMaskPreUrban };
+}
+
+// Get NOAA validation locations for an event (same logic as visualize_flood_events.js)
+function getValidationLocations(eventInfo) {
+  var floodLocations = cityConfig[selectedCity].floodLocations || {};
+  var eventId = eventInfo.id;
+  var noaaIds = eventInfo.noaa_event_ids || '';
+  var locations = [];
+  if (floodLocations[eventId]) {
+    locations = floodLocations[eventId];
+  } else if (noaaIds.indexOf(';') >= 0) {
+    noaaIds.split(';').forEach(function(id) {
+      id = id.trim();
+      if (floodLocations[id]) {
+        locations = locations.concat(floodLocations[id]);
+      }
+    });
+  } else {
+    var checkId = noaaIds.trim();
+    if (floodLocations[checkId]) {
+      locations = floodLocations[checkId];
+    }
+  }
+  return locations;
 }
 
 // ============================================================================
@@ -944,16 +1061,109 @@ print('Threshold mode:', useAdaptiveThreshold ? 'adaptive (percentile, clamped)'
 
 // Generate flood masks for all events (fixed or adaptive threshold per flag)
 var maskList = [];
+var preUrbanMaskList = [];
+var eventIndexForMask = [];
 for (var i = 0; i < floodEvents.length; i++) {
-  var mask = useAdaptiveThreshold
+  var result = useAdaptiveThreshold
     ? generateFloodMaskAdaptive(floodEvents[i])
     : generateFloodMask(floodEvents[i]);
-  if (mask !== null) {
-    maskList.push(mask);
+  if (result !== null) {
+    maskList.push(result.mask);
+    preUrbanMaskList.push(result.maskPreUrban);
+    eventIndexForMask.push(i);
   }
 }
 
 print('Events with valid flood masks:', maskList.length);
+
+// Build per-event NOAA validation (SAR, before urban mask) and print match % for each event
+var validationFeatures = [];
+for (var j = 0; j < preUrbanMaskList.length; j++) {
+  var idx = eventIndexForMask[j];
+  var ev = floodEvents[idx];
+  var locs = getValidationLocations(ev);
+  var pointsFC = ee.FeatureCollection(locs.map(function(loc) {
+    return ee.Feature(ee.Geometry.Point([loc.lon, loc.lat]));
+  }));
+  validationFeatures.push(ee.Feature(null, {
+    eventId: ev.id,
+    label: ev.label,
+    mask: preUrbanMaskList[j],
+    points: pointsFC
+  }));
+}
+var validationFC = ee.FeatureCollection(validationFeatures);
+
+function addValidationStats(f) {
+  var mask = ee.Image(f.get('mask'));
+  var points = ee.FeatureCollection(f.get('points'));
+  var pointsInAOI = points.filterBounds(focusAOI);
+  var total = pointsInAOI.size();
+  function hitRateAtBuffer(bufferM) {
+    var withBuffer = pointsInAOI.map(function(pt) {
+      var buf = pt.geometry().buffer(bufferM);
+      var maxVal = mask.reduceRegion({
+        geometry: buf,
+        reducer: ee.Reducer.max(),
+        scale: 100,
+        bestEffort: true
+      }).get('flood');
+      return pt.set('flood_max', maxVal);
+    });
+    var withData = withBuffer.filter(ee.Filter.notNull(['flood_max']));
+    var n = withData.size();
+    var hits = withData.filter(ee.Filter.gte('flood_max', 1)).size();
+    var pct = ee.Number(hits).divide(ee.Number(n).max(1)).multiply(100);
+    return { total: n, hits: hits, pct: pct };
+  }
+  var r500 = hitRateAtBuffer(500);
+  var r1000 = hitRateAtBuffer(1000);
+  return f.set({
+    total: r500.total,
+    hits500: r500.hits,
+    pct500: r500.pct,
+    hits1000: r1000.hits,
+    pct1000: r1000.pct
+  });
+}
+
+validationFC = validationFC.map(addValidationStats);
+// pts = NOAA location points in AOI (can be 2 per report when using begin+end coords). Composite = multiple NOAA event IDs.
+print('NOAA point validation (SAR, before urban mask) — match % per event:');
+validationFC.evaluate(function(result) {
+  if (result.features && result.features.length > 0) {
+    var pad = function(s, n) {
+      s = String(s);
+      while (s.length < n) s += ' ';
+      return s;
+    };
+    var repeatStr = function(ch, n) {
+      var out = '';
+      for (var i = 0; i < n; i++) out += ch;
+      return out;
+    };
+    var maxLabel = 0;
+    result.features.forEach(function(f) {
+      var len = (f.properties.label || '').length;
+      if (len > maxLabel) maxLabel = len;
+    });
+    maxLabel = Math.min(maxLabel + 2, 52);
+    print('');
+    print('  ' + pad('Event', maxLabel) + '  pts   ' + pad('500 m', 14) + '   ' + pad('1000 m', 14));
+    print('  ' + repeatStr('-', maxLabel) + '  ---   ' + repeatStr('-', 14) + '   ' + repeatStr('-', 14));
+    result.features.forEach(function(f) {
+      var p = f.properties;
+      var total = p.total !== undefined ? p.total : 0;
+      var label = (p.label || '').substring(0, 50);
+      label = pad(label, maxLabel);
+      var s500 = total === 0 ? '—' : p.hits500 + '/' + total + ' = ' + (p.pct500 != null ? Math.round(p.pct500) : 0) + '%';
+      var s1000 = total === 0 ? '—' : p.hits1000 + '/' + total + ' = ' + (p.pct1000 != null ? Math.round(p.pct1000) : 0) + '%';
+      var ptsStr = pad('', 3 - String(total).length) + total;
+      print('  ' + label + '  ' + ptsStr + '   ' + pad(s500, 14) + '   ' + pad(s1000, 14));
+    });
+    print('');
+  }
+});
 
 // Aggregate masks by summing (each mask is 1 for flood, 0 for no flood)
 // Result: frequency map showing how many events detected flooding at each pixel

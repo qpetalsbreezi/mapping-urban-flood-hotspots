@@ -1269,8 +1269,16 @@ if (beforeVV && afterVV) {
   }).get('flood');
   print('Combined flood mask pixels (before urban/water masks):', combinedMaskCount);
   
+  // Apply permanent water and speckle first; keep a copy for validation (no urban filter)
+  var floodMaskPreUrban = floodMaskLayer
+    .updateMask(permanentWater.not())
+    .clip(focusAOI);
+  floodMaskPreUrban = floodMaskPreUrban.updateMask(
+    floodMaskPreUrban.connectedPixelCount(FLOOD_DETECTION_CONFIG.connectedNeighborhood, true)
+      .gte(FLOOD_DETECTION_CONFIG.minConnectedPixels)
+  );
+  
   // Apply urban and permanent water masks
-  // First, check how many pixels pass the threshold before filtering
   var beforeFilterCount = floodMaskLayer.reduceRegion({
     reducer: ee.Reducer.sum(),
     geometry: focusAOI,
@@ -1279,14 +1287,12 @@ if (beforeVV && afterVV) {
   }).get('flood');
   print('Flood pixels before urban/water filtering:', beforeFilterCount);
   
-  // Apply filters: only keep flood pixels in urban areas, exclude permanent water
   floodMaskLayer = floodMaskLayer
     .updateMask(urbanMask) // Only urban areas (WorldCover built OR NLCD impervious >=20%)
     .updateMask(permanentWater.not()) // Exclude permanent water (JRC occurrence >=50%)
     .clip(focusAOI);
   
   // Remove small speckle (isolated pixels) - keep only connected areas with at least 5 pixels
-  // This helps remove noise and false positives
   floodMaskLayer = floodMaskLayer.updateMask(
     floodMaskLayer.connectedPixelCount(FLOOD_DETECTION_CONFIG.connectedNeighborhood, true)
       .gte(FLOOD_DETECTION_CONFIG.minConnectedPixels)
@@ -1327,6 +1333,58 @@ if (beforeVV && afterVV) {
       'VV only (threshold: ' + FLOOD_DETECTION_CONFIG.vvOnlyThreshold + ' dB)'
     ));
   }
+}
+
+// NOAA point validation: sample S1 flood mask at reported flood locations
+var validationLocations = [];
+var validationFloodLocations = cityConfig[selectedCity].floodLocations || {};
+var validationEventId = selectedEventId;
+var validationNoaaIds = eventInfo.noaa_event_ids || '';
+if (validationFloodLocations[validationEventId]) {
+  validationLocations = validationFloodLocations[validationEventId];
+} else if (validationNoaaIds.indexOf(';') >= 0) {
+  validationNoaaIds.split(';').forEach(function(id) {
+    id = id.trim();
+    if (validationFloodLocations[id]) {
+      validationLocations = validationLocations.concat(validationFloodLocations[id]);
+    }
+  });
+} else {
+  var checkId = validationNoaaIds.trim();
+  if (validationFloodLocations[checkId]) {
+    validationLocations = validationFloodLocations[checkId];
+  }
+}
+if (validationLocations.length > 0) {
+  var validationPoints = ee.FeatureCollection(validationLocations.map(function(loc) {
+    return ee.Feature(ee.Geometry.Point([loc.lon, loc.lat]));
+  }));
+  var validationPointsInAOI = validationPoints.filterBounds(focusAOI);
+  var validationNumPoints = validationPointsInAOI.size();
+  print('NOAA point validation (SAR, before urban mask):', validationLocations.length, 'locations for event,', validationNumPoints, 'inside AOI');
+  var validationBuffers = [500, 1000];
+  function hitRateAtBuffer(bufferM, maskImage) {
+    var withBuffer = validationPointsInAOI.map(function(f) {
+      var buf = f.geometry().buffer(bufferM);
+      var maxVal = maskImage.reduceRegion({
+        geometry: buf,
+        reducer: ee.Reducer.max(),
+        scale: 100,
+        bestEffort: true
+      }).get('flood');
+      return f.set('flood_max', maxVal);
+    });
+    var withData = withBuffer.filter(ee.Filter.notNull(['flood_max']));
+    var total = withData.size();
+    var hits = withData.filter(ee.Filter.gte('flood_max', 1)).size();
+    return { total: total, hits: hits, pct: ee.Number(hits).divide(ee.Number(total).max(1)).multiply(100) };
+  }
+  validationBuffers.forEach(function(bufferM) {
+    var r = hitRateAtBuffer(bufferM, floodMaskPreUrban);
+    print('  Buffer', bufferM, 'm:', r.hits, '/', r.total, '=', r.pct, '%');
+  });
+} else {
+  print('NOAA point validation: no location data for this event');
 }
 
 // Sentinel-2 flood mask for validation

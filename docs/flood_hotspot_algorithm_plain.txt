@@ -28,7 +28,7 @@ Flood events are extracted from the NOAA Storm Events Database. For Raleigh, eve
 
 Events are cross-referenced with USGS stream gage data. For Raleigh, the Crabtree Creek gage (Station 02087324) must show water levels exceeding 10 feet. For Houston, the Buffalo Bayou gage (Station 08073700) must show water levels exceeding 40 feet.
 
-Events are selected if they have both NOAA documentation and USGS validation, and have available Sentinel-1 SAR imagery. This process identified 5 events for Raleigh and 11 events for Houston (including one control event with no documented flooding).
+Events are selected if they have both NOAA documentation and USGS validation, and have available Sentinel-1 SAR imagery. This process identified 5 flood events for Raleigh and 10 flood events for Houston. Houston also includes one control event (no documented flooding) used for sanity checks; the control event is excluded from hotspot aggregation.
 
 STEP 2: Satellite Imagery Matching
 
@@ -54,7 +54,7 @@ STEP 5: Hybrid Threshold-Based Flood Detection
 
 When both VV and VH polarizations are available, both must independently exceed a threshold of -1.8 dB decrease. When only VV is available, a stricter threshold of -2.0 dB is applied.
 
-Thresholds determined through iterative refinement based on visual inspection against known flood locations from NOAA reports.
+Thresholds are fixed (not scene-adaptive) and were chosen through iterative refinement based on visual inspection against known flood locations from NOAA reports. They may underestimate or overestimate extent in some scenes or regions.
 
 STEP 6: Spatial Filtering and Masking
 
@@ -62,7 +62,7 @@ The urban mask combines two data sources: ESA WorldCover (version 200, year 2021
 
 Permanent water bodies are excluded using JRC Global Surface Water dataset (water occurrence ≥50%).
 
-Both masks are applied. Only pixels within urban areas and not permanent water are classified as flooded.
+Both masks are applied. Only pixels within urban areas and not permanent water are classified as flooded. Flooding in non-urban areas (e.g. open land, agriculture, parks) is not mapped; the product is an urban flood hotspot map.
 
 STEP 7: Speckle Removal and Noise Filtering
 
@@ -74,7 +74,7 @@ Individual binary flood masks (1=flood, 0=no flood) for each event are summed to
 
 STEP 9: Hotspot Classification and Visualization
 
-Frequency values are classified into discrete categories: frequency 1 = yellow, frequencies 2-3 = orange, frequency 4+ = red. The hotspot map is displayed as a 70% opacity overlay on a base map.
+Frequency values are classified into discrete categories: frequency 1 = orange (#FF9800), frequencies 2-3 = red (#FF5252), frequency 4+ = dark red (#D32F2F). The hotspot map is displayed as a 70% opacity overlay on a base map.
 
 Key Algorithm Parameters
 
@@ -84,3 +84,8 @@ Key Algorithm Parameters
 - Minimum connected pixels: 5 pixels
 - Urban threshold: ≥20% impervious surface OR WorldCover built-up class (class 50)
 - Permanent water threshold: ≥50% water occurrence
+
+Design Choices and Scope
+
+- Urban-only: Flood extent is restricted to urban or impervious areas. Areas that are not built-up or impervious (e.g. forests, crops, open water outside permanent water mask) are not classified as flooded even if SAR change suggests water. The output is an urban flood hotspot map.
+- Fixed thresholds: The dB thresholds (-1.8 and -2.0) are global and do not adapt to individual scenes. They were tuned by visual comparison to known flood locations and may underestimate or overestimate in some events or regions.

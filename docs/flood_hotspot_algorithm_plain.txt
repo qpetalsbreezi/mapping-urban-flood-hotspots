@@ -52,9 +52,13 @@ Change detection is performed on both VV and VH polarizations when available. Bo
 
 STEP 5: Hybrid Threshold-Based Flood Detection
 
-When both VV and VH polarizations are available, both must independently exceed a threshold of -1.8 dB decrease. When only VV is available, a stricter threshold of -2.0 dB is applied.
+When both VV and VH polarizations are available, both must independently exceed the same threshold (dB decrease). When only VV is available, the same threshold is used (no separate stricter value in adaptive mode).
 
-Thresholds are fixed (not scene-adaptive) and were chosen through iterative refinement based on visual inspection against known flood locations from NOAA reports. They may underestimate or overestimate extent in some scenes or regions.
+Two modes are available (controlled by useAdaptiveThreshold in the scripts):
+
+Fixed mode (default): Threshold is -1.8 dB when both VV and VH are available, and -2.0 dB when only VV is available. These values were chosen through iterative refinement based on visual inspection against known flood locations from NOAA reports.
+
+Adaptive mode (optional): The threshold is derived per scene from the VV change image over the AOI. The chosen percentile (e.g. 5th) of the change distribution is computed and clamped to a sensible range (e.g. -3.5 dB to -1.0 dB). This makes the threshold scene-adaptive while avoiding extreme values. Adaptive mode is off by default; set useAdaptiveThreshold = true to enable.
 
 STEP 6: Spatial Filtering and Masking
 
@@ -79,8 +83,8 @@ Frequency values are classified into discrete categories: frequency 1 = orange (
 Key Algorithm Parameters
 
 - Smoothing radius: 90 meters
-- VV+VH threshold: -1.8 dB (when both polarizations available)
-- VV-only threshold: -2.0 dB (single-polarization data)
+- Fixed mode: VV+VH threshold -1.8 dB; VV-only threshold -2.0 dB
+- Adaptive mode (optional): percentile 5; clamp range -3.5 dB to -1.0 dB
 - Minimum connected pixels: 5 pixels
 - Urban threshold: ≥20% impervious surface OR WorldCover built-up class (class 50)
 - Permanent water threshold: ≥50% water occurrence
@@ -88,4 +92,4 @@ Key Algorithm Parameters
 Design Choices and Scope
 
 - Urban-only: Flood extent is restricted to urban or impervious areas. Areas that are not built-up or impervious (e.g. forests, crops, open water outside permanent water mask) are not classified as flooded even if SAR change suggests water. The output is an urban flood hotspot map.
-- Fixed thresholds: The dB thresholds (-1.8 and -2.0) are global and do not adapt to individual scenes. They were tuned by visual comparison to known flood locations and may underestimate or overestimate in some events or regions.
+- Threshold mode: By default, fixed dB thresholds (-1.8 and -2.0) are used and do not adapt to individual scenes. Optional adaptive mode derives a per-scene threshold from a percentile of the change image (clamped), which can improve consistency across events and regions.

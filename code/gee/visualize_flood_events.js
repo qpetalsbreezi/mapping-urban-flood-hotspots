@@ -25,6 +25,10 @@ var useMultiImageBaseline = false;
 var multiImageDaysBefore = 30;  // Days before event to search for pre-event images
 var multiImageMaxCount = 5;   // Maximum number of images to average
 
+// Adaptive threshold: derive threshold from each scene instead of fixed dB
+// Set to true to use scene percentile (clamped); false = use fixed vvVhThreshold / vvOnlyThreshold
+var useAdaptiveThreshold = false;
+
 // ============================================================================
 // FLOOD DETECTION PARAMETERS (SHARED WITH generate_flood_hotspots.js)
 // ============================================================================
@@ -35,9 +39,14 @@ var FLOOD_DETECTION_CONFIG = {
   // Speckle filtering
   smoothRadius: 90,  // meters - radius for focal_mean smoothing
   
-  // Change detection thresholds (dB)
+  // Change detection thresholds (dB) - used when useAdaptiveThreshold is false
   vvVhThreshold: -1.8,  // dB - threshold when both VV and VH are available
   vvOnlyThreshold: -2.0,  // dB - stricter threshold when only VV is available
+  
+  // Adaptive threshold (when useAdaptiveThreshold is true): percentile of VV change, clamped
+  adaptivePercentile: 5,       // use this percentile of change image over AOI
+  adaptiveThresholdMin: -3.5,   // clamp threshold to no more negative than this (dB)
+  adaptiveThresholdMax: -1.0,   // clamp threshold to no less negative than this (dB)
   
   // Speckle removal
   minConnectedPixels: 5,  // minimum connected pixels to keep (removes isolated noise)
@@ -1181,9 +1190,30 @@ if (beforeVV && afterVV) {
   var afterHasVH = afterBands.filter(ee.Filter.eq('item', 'VH')).size().gt(0);
   var bothHaveVH = beforeHasVH.and(afterHasVH);
   
+  // Threshold: fixed or adaptive (percentile of VV change over AOI, clamped)
+  var thresholdVvVh;
+  var thresholdVvOnly;
+  if (useAdaptiveThreshold) {
+    var vvChangeForReduce = vvChangeSmoothed.rename('change');
+    var percentileResult = vvChangeForReduce.reduceRegion({
+      reducer: ee.Reducer.percentile([FLOOD_DETECTION_CONFIG.adaptivePercentile], ['change']),
+      geometry: focusAOI,
+      scale: 100,
+      bestEffort: true
+    });
+    var adaptiveThreshold = ee.Number(percentileResult.get('change'))
+      .max(FLOOD_DETECTION_CONFIG.adaptiveThresholdMin)
+      .min(FLOOD_DETECTION_CONFIG.adaptiveThresholdMax);
+    thresholdVvVh = adaptiveThreshold;
+    thresholdVvOnly = adaptiveThreshold;
+  } else {
+    thresholdVvVh = ee.Number(FLOOD_DETECTION_CONFIG.vvVhThreshold);
+    thresholdVvOnly = ee.Number(FLOOD_DETECTION_CONFIG.vvOnlyThreshold);
+  }
+  
   // Create VV mask (threshold to detect flooding)
   // Negative change = backscatter decreased = flooding
-  var vvMask = vvChangeSmoothed.lt(FLOOD_DETECTION_CONFIG.vvVhThreshold).rename('flood');
+  var vvMask = vvChangeSmoothed.lt(thresholdVvVh).rename('flood');
   
   // Diagnostic: Check VV mask pixel count
   var vvMaskCount = vvMask.reduceRegion({
@@ -1207,7 +1237,7 @@ if (beforeVV && afterVV) {
   
   var vhMask = ee.Algorithms.If(
     bothHaveVH,
-    ee.Image(vhChangeSmoothed).lt(FLOOD_DETECTION_CONFIG.vvVhThreshold).rename('flood'),
+    ee.Image(vhChangeSmoothed).lt(thresholdVvVh).rename('flood'),
     ee.Image.constant(0).mask(ee.Image.constant(0)) // fully masked dummy
   );
   
@@ -1227,7 +1257,7 @@ if (beforeVV && afterVV) {
   floodMaskLayer = ee.Image(ee.Algorithms.If(
     bothHaveVH,
     vvMask.multiply(ee.Image(vhMask)), // Both VV and VH must agree (multiply = AND for binary)
-    vvChangeSmoothed.lt(FLOOD_DETECTION_CONFIG.vvOnlyThreshold) // Stricter VV-only threshold
+    vvChangeSmoothed.lt(thresholdVvOnly) // Stricter VV-only threshold
   )).rename('flood');
   
   // Diagnostic: Check combined mask pixel count
@@ -1287,11 +1317,16 @@ if (beforeVV && afterVV) {
   var floodPercent = ee.Number(floodArea).divide(ee.Number(totalArea)).multiply(100);
   print('Flood area percentage:', floodPercent, '%');
   
-  print('Flood mask created using:', ee.Algorithms.If(
-    bothHaveVH,
-    'VV AND VH (both must agree, threshold: ' + FLOOD_DETECTION_CONFIG.vvVhThreshold + ' dB)',
-    'VV only (threshold: ' + FLOOD_DETECTION_CONFIG.vvOnlyThreshold + ' dB)'
-  ));
+  if (useAdaptiveThreshold) {
+    print('Flood mask created using: Adaptive threshold (percentile ' + FLOOD_DETECTION_CONFIG.adaptivePercentile + ', clamped to [' + FLOOD_DETECTION_CONFIG.adaptiveThresholdMin + ', ' + FLOOD_DETECTION_CONFIG.adaptiveThresholdMax + '] dB)');
+    print('  Computed threshold (dB):', thresholdVvVh);
+  } else {
+    print('Flood mask created using:', ee.Algorithms.If(
+      bothHaveVH,
+      'VV AND VH (both must agree, threshold: ' + FLOOD_DETECTION_CONFIG.vvVhThreshold + ' dB)',
+      'VV only (threshold: ' + FLOOD_DETECTION_CONFIG.vvOnlyThreshold + ' dB)'
+    ));
+  }
 }
 
 // Sentinel-2 flood mask for validation

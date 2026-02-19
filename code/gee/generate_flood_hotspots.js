@@ -24,6 +24,10 @@ var useMultiImageBaseline = false;
 var multiImageDaysBefore = 30;  // Days before event to search for pre-event images
 var multiImageMaxCount = 5;   // Maximum number of images to average
 
+// Adaptive threshold: derive threshold from each scene instead of fixed dB
+// Set to true to use scene percentile (clamped); false = use fixed vvVhThreshold / vvOnlyThreshold
+var useAdaptiveThreshold = false;
+
 // ============================================================================
 // FLOOD DETECTION PARAMETERS (SHARED WITH visualize_flood_events.js)
 // ============================================================================
@@ -34,9 +38,14 @@ var FLOOD_DETECTION_CONFIG = {
   // Speckle filtering
   smoothRadius: 90,  // meters - radius for focal_mean smoothing
   
-  // Change detection thresholds (dB)
+  // Change detection thresholds (dB) - used when useAdaptiveThreshold is false
   vvVhThreshold: -1.8,  // dB - threshold when both VV and VH are available
   vvOnlyThreshold: -2.0,  // dB - stricter threshold when only VV is available
+  
+  // Adaptive threshold (when useAdaptiveThreshold is true): percentile of VV change, clamped
+  adaptivePercentile: 5,       // use this percentile of change image over AOI
+  adaptiveThresholdMin: -3.5,   // clamp threshold to no more negative than this (dB)
+  adaptiveThresholdMax: -1.0,   // clamp threshold to no less negative than this (dB)
   
   // Speckle removal
   minConnectedPixels: 5,  // minimum connected pixels to keep (removes isolated noise)
@@ -768,6 +777,10 @@ function generateFloodMask(eventInfo) {
   var afterVVSmoothed = afterVV.focal_mean(FLOOD_DETECTION_CONFIG.smoothRadius, 'circle', 'meters');
   var vvChangeSmoothed = afterVVSmoothed.subtract(beforeVVSmoothed);
   
+  // Threshold: use fixed or adaptive (percentile of VV change over AOI, clamped)
+  var thresholdVvVh = ee.Number(FLOOD_DETECTION_CONFIG.vvVhThreshold);
+  var thresholdVvOnly = ee.Number(FLOOD_DETECTION_CONFIG.vvOnlyThreshold);
+  
   // Check if VH exists
   var beforeBands = before.bandNames();
   var afterBands = after.bandNames();
@@ -776,7 +789,7 @@ function generateFloodMask(eventInfo) {
   var bothHaveVH = beforeHasVH.and(afterHasVH);
   
   // Create VV mask
-  var vvMask = vvChangeSmoothed.lt(FLOOD_DETECTION_CONFIG.vvVhThreshold).rename('flood');
+  var vvMask = vvChangeSmoothed.lt(thresholdVvVh).rename('flood');
   
   // Create VH mask if available
   var vhChangeSmoothed = ee.Algorithms.If(
@@ -789,7 +802,7 @@ function generateFloodMask(eventInfo) {
   
   var vhMask = ee.Algorithms.If(
     bothHaveVH,
-    ee.Image(vhChangeSmoothed).lt(FLOOD_DETECTION_CONFIG.vvVhThreshold).rename('flood'),
+    ee.Image(vhChangeSmoothed).lt(thresholdVvVh).rename('flood'),
     ee.Image.constant(0).mask(ee.Image.constant(0))
   );
   
@@ -797,7 +810,7 @@ function generateFloodMask(eventInfo) {
   var floodMask = ee.Image(ee.Algorithms.If(
     bothHaveVH,
     vvMask.multiply(ee.Image(vhMask)),
-    vvChangeSmoothed.lt(FLOOD_DETECTION_CONFIG.vvOnlyThreshold)
+    vvChangeSmoothed.lt(thresholdVvOnly)
   )).rename('flood');
   
   // Apply filters
@@ -812,6 +825,97 @@ function generateFloodMask(eventInfo) {
       .gte(FLOOD_DETECTION_CONFIG.minConnectedPixels)
   );
   
+  return floodMask;
+}
+
+// Same as generateFloodMask but uses scene-adaptive threshold (percentile of VV change, clamped)
+function generateFloodMaskAdaptive(eventInfo) {
+  var beforeImageId = eventInfo.sentinel1.before && eventInfo.sentinel1.before.imageId;
+  var beforeDate = eventInfo.sentinel1.before && eventInfo.sentinel1.before.date;
+  var afterImageId = eventInfo.sentinel1.after && eventInfo.sentinel1.after.imageId;
+  var afterDate = eventInfo.sentinel1.after && eventInfo.sentinel1.after.date;
+  
+  if (!beforeImageId || !afterImageId) {
+    return null;
+  }
+  
+  var before = useMultiImageBaseline 
+    ? loadSentinel1MultiImageBaseline(beforeImageId, eventInfo.event_date, beforeDate)
+    : loadSentinel1(beforeImageId, beforeDate);
+  var after = loadSentinel1(afterImageId, afterDate);
+  
+  if (!before || !after) {
+    return null;
+  }
+  
+  before = before.clip(focusAOI);
+  after = after.clip(focusAOI);
+  
+  var worldCover = ee.Image('ESA/WorldCover/v200/2021').select('Map').rename('landcover');
+  var worldCoverBuilt = worldCover.eq(FLOOD_DETECTION_CONFIG.worldCoverBuiltClass);
+  var nlcdImpervious = ee.Image('USGS/NLCD_RELEASES/2021_REL/NLCD/2021')
+    .select('impervious')
+    .divide(100);
+  var nlcdImperviousMask = nlcdImpervious
+    .updateMask(nlcdImpervious.mask())
+    .gte(FLOOD_DETECTION_CONFIG.nlcdImperviousThreshold);
+  var urbanMask = worldCoverBuilt.or(nlcdImperviousMask);
+  
+  var jrcWater = ee.Image('JRC/GSW1_4/GlobalSurfaceWater').select('occurrence');
+  var permanentWater = jrcWater.gte(FLOOD_DETECTION_CONFIG.jrcWaterOccurrenceThreshold).unmask(0).rename('perm_water');
+  
+  var beforeVV = toDbSafe(before, 'VV');
+  var afterVV = toDbSafe(after, 'VV');
+  var beforeVVSmoothed = beforeVV.focal_mean(FLOOD_DETECTION_CONFIG.smoothRadius, 'circle', 'meters');
+  var afterVVSmoothed = afterVV.focal_mean(FLOOD_DETECTION_CONFIG.smoothRadius, 'circle', 'meters');
+  var vvChangeSmoothed = afterVVSmoothed.subtract(beforeVVSmoothed);
+  
+  var vvChangeForReduce = vvChangeSmoothed.rename('change');
+  var percentileResult = vvChangeForReduce.reduceRegion({
+    reducer: ee.Reducer.percentile([FLOOD_DETECTION_CONFIG.adaptivePercentile], ['change']),
+    geometry: focusAOI,
+    scale: 100,
+    bestEffort: true
+  });
+  var adaptiveThreshold = ee.Number(percentileResult.get('change'))
+    .max(FLOOD_DETECTION_CONFIG.adaptiveThresholdMin)
+    .min(FLOOD_DETECTION_CONFIG.adaptiveThresholdMax);
+  var thresholdVvVh = adaptiveThreshold;
+  var thresholdVvOnly = adaptiveThreshold;
+  
+  var beforeBands = before.bandNames();
+  var afterBands = after.bandNames();
+  var beforeHasVH = beforeBands.filter(ee.Filter.eq('item', 'VH')).size().gt(0);
+  var afterHasVH = afterBands.filter(ee.Filter.eq('item', 'VH')).size().gt(0);
+  var bothHaveVH = beforeHasVH.and(afterHasVH);
+  
+  var vvMask = vvChangeSmoothed.lt(thresholdVvVh).rename('flood');
+  var vhChangeSmoothed = ee.Algorithms.If(
+    bothHaveVH,
+    ee.Image(toDbSafe(after, 'VH'))
+      .focal_mean(FLOOD_DETECTION_CONFIG.smoothRadius, 'circle', 'meters')
+      .subtract(ee.Image(toDbSafe(before, 'VH')).focal_mean(FLOOD_DETECTION_CONFIG.smoothRadius, 'circle', 'meters')),
+    ee.Image.constant(0)
+  );
+  var vhMask = ee.Algorithms.If(
+    bothHaveVH,
+    ee.Image(vhChangeSmoothed).lt(thresholdVvVh).rename('flood'),
+    ee.Image.constant(0).mask(ee.Image.constant(0))
+  );
+  var floodMask = ee.Image(ee.Algorithms.If(
+    bothHaveVH,
+    vvMask.multiply(ee.Image(vhMask)),
+    vvChangeSmoothed.lt(thresholdVvOnly)
+  )).rename('flood');
+  
+  floodMask = floodMask
+    .updateMask(urbanMask)
+    .updateMask(permanentWater.not())
+    .clip(focusAOI);
+  floodMask = floodMask.updateMask(
+    floodMask.connectedPixelCount(FLOOD_DETECTION_CONFIG.connectedNeighborhood, true)
+      .gte(FLOOD_DETECTION_CONFIG.minConnectedPixels)
+  );
   return floodMask;
 }
 
@@ -836,12 +940,14 @@ var floodEvents = allEvents.filter(function(event) {
 print('City:', selectedCity);
 print('Total events:', allEvents.length);
 print('Flood events (excluding control):', floodEvents.length);
+print('Threshold mode:', useAdaptiveThreshold ? 'adaptive (percentile, clamped)' : 'fixed dB');
 
-// Generate flood masks for all events
-// Note: We'll handle null masks by creating a collection and filtering
+// Generate flood masks for all events (fixed or adaptive threshold per flag)
 var maskList = [];
 for (var i = 0; i < floodEvents.length; i++) {
-  var mask = generateFloodMask(floodEvents[i]);
+  var mask = useAdaptiveThreshold
+    ? generateFloodMaskAdaptive(floodEvents[i])
+    : generateFloodMask(floodEvents[i]);
   if (mask !== null) {
     maskList.push(mask);
   }

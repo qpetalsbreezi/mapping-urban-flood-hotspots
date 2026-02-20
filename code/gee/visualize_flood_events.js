@@ -903,7 +903,12 @@ print('  Landsat after    ->', eventInfo.landsat.after);
 // Helper functions
 function formatLabel(prefix, scene) {
   if (!scene || !scene.date) return prefix;
-  return prefix + ' (' + scene.date + ')';
+  var label = prefix + ' (' + scene.date + ')';
+  if (scene.validFraction != null) {
+    var pct = (scene.validFraction * 100).toFixed(1);
+    label += ', ' + pct + '% clear';
+  }
+  return label;
 }
 
 function nextDay(dateStr) {
@@ -916,12 +921,14 @@ function toDbSafe(img, band) {
   return ee.Image(img).select(band);
 }
 
+// S2_SR in GEE stores reflectance * 10000; scale to 0-1 for vis and NDWI
+var S2_REFLECTANCE_SCALE = 0.0001;
+
+// Mask only definite cloud (5) and cloud shadow (4). Keep low/medium cloud prob (6,7) visible so catalog validFraction matches view.
 function maskS2Clouds(img) {
   var scl = img.select('SCL');
   var cloudMask = scl.neq(4)  // 4 = cloud shadow
-    .and(scl.neq(5))  // 5 = cloud
-    .and(scl.neq(6))  // 6 = cloud (low prob)
-    .and(scl.neq(7)); // 7 = cloud (medium prob)
+    .and(scl.neq(5));         // 5 = cloud (definite)
   return img.updateMask(cloudMask);
 }
 
@@ -1011,7 +1018,8 @@ function loadSentinel1MultiImageBaseline(imageId, eventDate, beforeDate) {
 
 function loadSentinel2(imageId) {
   if (!imageId) return null;
-  return maskS2Clouds(ee.Image(imageId));
+  var img = maskS2Clouds(ee.Image(imageId));
+  return img.select(['B2', 'B3', 'B4', 'B8']).multiply(S2_REFLECTANCE_SCALE);
 }
 
 function loadLandsat(imageId) {
@@ -1082,6 +1090,14 @@ var s2FloodMaskLayer = null;
 
 // Sentinel-1 VV/VH in dB plus difference/ratio helpers for debugging flood signal
 print('Has S1 before:', !!before, 'Has S1 after:', !!after);
+if (eventInfo.sentinel2 && (eventInfo.sentinel2.before || eventInfo.sentinel2.after)) {
+  var vfBefore = eventInfo.sentinel2.before && eventInfo.sentinel2.before.validFraction != null ? (eventInfo.sentinel2.before.validFraction * 100).toFixed(1) : '—';
+  var vfAfter = eventInfo.sentinel2.after && eventInfo.sentinel2.after.validFraction != null ? (eventInfo.sentinel2.after.validFraction * 100).toFixed(1) : '—';
+  print('S2 validFraction (clear-sky % of tile): before', vfBefore + '%', ', after', vfAfter + '%', '(low = cloudy, layer appears white)');
+  if (eventInfo.sentinel2.after && eventInfo.sentinel2.after.validFraction != null && eventInfo.sentinel2.after.validFraction < 0.05) {
+    print('  → S2 After is mostly clouds; uncheck "Sentinel-2 After" to see S1 flood mask and basemap clearly.');
+  }
+}
 if (useMultiImageBaseline) {
   print('Multi-image baseline enabled: averaging up to', multiImageMaxCount, 'pre-event images from', multiImageDaysBefore, 'days before event');
   print('  Only images with same orbit configuration (pass direction and relative orbit) will be averaged');
@@ -1399,6 +1415,8 @@ if (s2Before && s2After) {
   // Water detection: NDWI > 0.2
   var waterBefore = ndwiBefore.gt(0.2);
   var waterAfter = ndwiAfter.gt(0.2);
+  // Where "before" is masked (e.g. cloud), treat as not water so we can see new water in "after"
+  waterBefore = waterBefore.unmask(0);
   
   // Flood = water after AND NOT water before
   var s2FloodMask = waterAfter.and(waterBefore.not()).rename('flood');
@@ -1409,6 +1427,16 @@ if (s2Before && s2After) {
     .clip(focusAOI);
   
   print('S2 flood mask created (NDWI > 0.2, change detection)');
+  var s2FloodPixels = s2FloodMaskLayer.reduceRegion({
+    reducer: ee.Reducer.sum(),
+    geometry: focusAOI,
+    scale: 20,
+    bestEffort: true
+  });
+  s2FloodPixels.evaluate(function(v) {
+    var n = v && v.flood != null ? v.flood : 0;
+    print('S2 flood pixel count:', n, n === 0 ? '(no blue pixels: try another event or check clouds)' : '');
+  });
 } else {
   print('S2 flood mask not available: need both before and after Sentinel-2 images');
 }
@@ -1513,9 +1541,38 @@ Map.addLayer(
 // Add Sentinel-2 layers (unchecked by default for faster visualization)
 if (s2Before) {
   Map.addLayer(s2Before, s2Vis, formatLabel('Sentinel-2 Before', eventInfo.sentinel2.before), false);
+  // Diagnostic: what % of AOI is valid in this view (vs catalog validFraction)
+  var onesBefore = ee.Image.constant(1).updateMask(s2Before.select(0).mask());
+  var statsBefore = onesBefore.reduceRegion({
+    reducer: ee.Reducer.sum().combine(ee.Reducer.count(), null, true),
+    geometry: focusAOI,
+    scale: 60,
+    bestEffort: true
+  });
+  statsBefore.evaluate(function(v) {
+    var sum = v && v.constant_sum != null ? v.constant_sum : 0;
+    var count = v && v.constant_count != null ? v.constant_count : 1;
+    var pct = count > 0 ? ((sum / count) * 100).toFixed(1) : '0';
+    var cat = eventInfo.sentinel2.before.validFraction != null ? (eventInfo.sentinel2.before.validFraction * 100).toFixed(1) : '?';
+    print('S2 Before: ' + pct + '% of AOI has valid pixels in this view (catalog: ' + cat + '% clear)');
+  });
 }
 if (s2After) {
   Map.addLayer(s2After, s2Vis, formatLabel('Sentinel-2 After', eventInfo.sentinel2.after), false);
+  var onesAfter = ee.Image.constant(1).updateMask(s2After.select(0).mask());
+  var statsAfter = onesAfter.reduceRegion({
+    reducer: ee.Reducer.sum().combine(ee.Reducer.count(), null, true),
+    geometry: focusAOI,
+    scale: 60,
+    bestEffort: true
+  });
+  statsAfter.evaluate(function(v) {
+    var sum = v && v.constant_sum != null ? v.constant_sum : 0;
+    var count = v && v.constant_count != null ? v.constant_count : 1;
+    var pct = count > 0 ? ((sum / count) * 100).toFixed(1) : '0';
+    var cat = eventInfo.sentinel2.after.validFraction != null ? (eventInfo.sentinel2.after.validFraction * 100).toFixed(1) : '?';
+    print('S2 After: ' + pct + '% of AOI has valid pixels in this view (catalog: ' + cat + '% clear)');
+  });
 }
 if (!s2Before && !s2After) {
   print('No Sentinel-2 imagery available within ±' + opticalWindowDays + ' days.');
@@ -1555,15 +1612,15 @@ if (s2FloodMaskLayer) {
   // Only visualize pixels where mask value is 1 (flood pixels)
   var s2FloodFill = s2FloodMaskLayer.selfMask().visualize({
     palette: ['#0066ff'], // blue fill
-    opacity: 0.55
+    opacity: 0.7
   });
   var s2FloodOutline = s2FloodMaskLayer.selfMask()
     .focal_max(40, 'circle', 'meters')
     .subtract(s2FloodMaskLayer.selfMask())
     .selfMask()
-    .visualize({palette: ['#003399'], opacity: 0.9}); // darker blue outline
+    .visualize({palette: ['#0011aa'], opacity: 1}); // darker blue outline
   var s2FloodVis = ee.ImageCollection([s2FloodFill, s2FloodOutline]).mosaic();
-  Map.addLayer(s2FloodVis, {}, 'S2 Flood Mask (NDWI, > 0.2)', true);
+  Map.addLayer(s2FloodVis, {opacity: 0.9}, 'S2 Flood Mask (NDWI, > 0.2)', true);
   
   // Print comparison info
   if (floodMaskLayer) {

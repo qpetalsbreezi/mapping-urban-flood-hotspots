@@ -71,7 +71,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--keywords",
         default="",
-        help="Optional comma-separated keywords; at least one must appear (case-insensitive) in EVENT_NARRATIVE or BEGIN_LOCATION.",
+        help="Optional comma-separated keywords; at least one must appear (case-insensitive) in EVENT_NARRATIVE, EPISODE_NARRATIVE, BEGIN_LOCATION, or END_LOCATION.",
     )
     return parser.parse_args()
 

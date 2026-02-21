@@ -130,7 +130,8 @@ var cityConfig = {
         {lat: 29.7525, lon: -95.4228, desc: 'HOUSTON HGTS'},
         {lat: 30.1431, lon: -95.7622, desc: 'TOMBALL'},
         {lat: 30.131, lon: -95.4135, desc: 'SPRING'},
-        {lat: 30.0375, lon: -95.4187, desc: 'WESTFIELD'}
+        {lat: 30.0375, lon: -95.4187, desc: 'WESTFIELD'},
+        {lat: 29.6896, lon: -95.2072, desc: 'PASADENA (721096)'}
       ],
       '830461_and_1_more': [
         {lat: 29.8976, lon: -95.8261, desc: 'KATY'},

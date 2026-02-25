@@ -121,11 +121,11 @@ var cityConfig = {
   },
   houston: {
     outerAOICoords: [
-      [-95.6, 29.6],
-      [-95.1, 29.6],
-      [-95.1, 29.9],
-      [-95.6, 29.9],
-      [-95.6, 29.6]
+      [-95.95, 29.45],
+      [-94.9, 29.45],
+      [-94.9, 30.2],
+      [-95.95, 30.2],
+      [-95.95, 29.45]
     ],
     // Match Python script: LineString buffered by 1000m then bounds
     // So we use the coordinates directly as Polygon (no buffer needed)

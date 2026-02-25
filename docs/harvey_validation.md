@@ -14,7 +14,7 @@ We use **Houston, Hurricane Harvey (August 2017)** as the primary event for vali
 
 - **NOAA Storm Events:** Reported flood locations (lat/lon) for the 6 Harvey reports in Harris County.
 - **NOAA NGS Emergency Response Imagery:** Aerial imagery (35–50 cm resolution) acquired over the Houston region after Harvey. Use for visual comparison or to derive flood extent for validation.
-  - **Viewer and download:** [storms.ngs.noaa.gov/storms/harvey](https://storms.ngs.noaa.gov/storms/harvey)
+  - **Viewer and download:** [storms.ngs.noaa.gov/storms/harvey/index.html](https://storms.ngs.noaa.gov/storms/harvey/index.html) (use index.html; the folder URL can return Access Denied). Or start at [storms.ngs.noaa.gov](https://storms.ngs.noaa.gov/) and click **Hurricane Harvey (2017)**.
   - **Metadata:** [NOAA InPort — Hurricane Harvey Emergency Response Imagery](https://www.fisheries.noaa.gov/inport/item/52376) (or search “Harvey” at storms.ngs.noaa.gov)
 
 ## How we use it

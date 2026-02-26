@@ -95,7 +95,21 @@ Key parameter choices (for reference): Sentinel-1 window of about 30 days before
 
 Aggregation and validation: Sum the per-event masks to get, at each pixel, the number of events that showed flooding there. Map that count to a simple color scale (for example, one event = orange, two or three events = red, four or more events = dark red) to produce the hotspot map. Check agreement by asking how many reported flood locations fall within 500 m or 1000 m of a detected flood pixel; this check is done on a version of the mask that excludes permanent water but not the urban filter, so NOAA reports outside mapped urban pixels can still count as hits. For Hurricane Harvey, also compare the flood map qualitatively to high-resolution aerial imagery.
 
-Data sets: Sentinel-1 GRD radar imagery; NOAA Storm Events records for Wake and Harris counties; USGS stream gauges on Crabtree Creek and Buffalo Bayou; global land-cover products for urban and impervious areas; global surface water occurrence data for permanent water; and NOAA emergency aerial imagery for Harvey. These are combined into a single, event-based workflow to derive and validate urban flood hotspots.
+Data sets used are listed in the Datasets section below.
+
+---
+
+## Datasets
+
+Give datasets their own section on the poster so judges can see sources at a glance. One line per dataset: name and role.
+
+- Sentinel-1 GRD (VV, VH): radar imagery for flood detection (pre- and post-event change).
+- NOAA Storm Events: reported flood events by county; used for event selection and validation point locations.
+- USGS stream gauges: Crabtree Creek (Raleigh) and Buffalo Bayou (Houston); used to require high water at event dates.
+- ESA WorldCover: built-up land class for urban mask.
+- USGS NLCD: impervious surface fraction for urban mask (e.g. ≥20%).
+- JRC Global Surface Water: permanent water occurrence; used to exclude rivers and lakes from flood detection.
+- NOAA NGS emergency aerial imagery: high-resolution post-Harvey imagery for qualitative validation (Houston only).
 
 ---
 
@@ -235,7 +249,17 @@ NOAA validation: The 500 m / 1000 m hit rates are computed using the flood mask 
 | Results | Harvey | One sentence + one map (SAR + NOAA points; optional aerial comparison) |
 | Results | Example event | One before/after + change + flood mask + NOAA points |
 | Results | Pipeline | Short bullet list of algorithm steps (optional) |
-| Results | Data | One-line or short list of data sources |
+| Results | Data | One-line or short list of data sources (or "See Datasets") |
+| Datasets | Data table/list | One row per dataset: name and role (flood detection, event selection, masks, validation). |
+
+Other poster elements (optional)
+- Title and author(s).
+- Abstract: short block (e.g. from Plain-language summary + one sentence on results).
+- Conclusion or key takeaway: 1–2 sentences (e.g. "Urban flood hotspots from real storms can support planning and equity analysis.").
+- Acknowledgments and/or funding.
+- References: 2–4 key papers (e.g. SAR flood mapping, NOAA/USGS use).
+- QR code or link to code/repo or project page.
+- Contact (e-mail or school).
 
 ---
 

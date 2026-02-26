@@ -231,11 +231,9 @@ NOAA validation: The 500 m / 1000 m hit rates are computed using the flood mask 
 
 ---
 
-### 8. Data sources (one line or small list)
+### 8. Data sources
 
-- Satellite: Sentinel-1 GRD (VV, VH) — Google Earth Engine
-- Ground truth: NOAA Storm Events (points), USGS gages (Crabtree Creek, Buffalo Bayou), NOAA NGS Harvey imagery
-- Masks: ESA WorldCover, USGS NLCD, JRC Global Surface Water
+Use the Datasets section as the single list on the poster (name + role per source). No need for a separate "Data sources" box—one Datasets table or bullet list is enough.
 
 ---
 
@@ -268,8 +266,8 @@ TBD: Update or verify details (e.g. validation percentages, Raleigh vs Houston p
 | Results | Harvey | One sentence + one map (SAR + NOAA points; optional aerial comparison) |
 | Results | Example event | One before/after + change + flood mask + NOAA points |
 | Results | Pipeline | Short bullet list of algorithm steps (optional) |
-| Results | Data | One-line or short list of data sources (or "See Datasets") |
-| Datasets | Data table/list | One row per dataset: name and role (flood detection, event selection, masks, validation). |
+| Results | Data | Omit separate list; use the single Datasets section for the poster. |
+| Datasets | Data table/list | One row per dataset: name and role (flood detection, event selection, masks, validation). Single source for all data. |
 | Conclusion | Bullets | See Conclusion section; update TBD items when final results are in. |
 
 Other poster elements (optional)

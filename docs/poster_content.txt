@@ -85,6 +85,8 @@ Heavy rainstorms are flooding city streets and neighborhoods more often, but man
 
 Keep this section concise on the poster so Results gets the most space. Emphasize what we did and why; implementation details (which platform or scripts) can be left to the repo.
 
+Study area: We use two cities to test the approach in different flood regimes and climates. Raleigh, NC (Wake County): inland, temperate; flooding is often tied to Crabtree Creek and urban drainage during heavy rain. Houston, TX (Harris County): coastal, subtropical; flooding is driven by tropical systems and extreme rainfall (e.g. Hurricane Harvey, Memorial Day and Tax Day floods) and affects a larger, low-lying urban area. Both have NOAA event reports, USGS gauges (Crabtree Creek, Buffalo Bayou), and Sentinel-1 coverage, so we can compare hotspot patterns and validation across settings.
+
 Overview: We build flood hotspot maps for Raleigh and Houston by combining NOAA Storm Events, USGS gauge data, and Sentinel-1 SAR. We filter events by county and location, require high water levels at USGS gauges, then match pre- and post-storm S1 images from the same orbit. Per-event flood masks use backscatter change, urban and permanent-water masks, and speckle filtering; we aggregate masks into a frequency map and validate with NOAA report points (500 m / 1000 m) and, for Harvey, NOAA aerial imagery.
 
 Event selection and imagery: Start from NOAA flood events for the county and keep those whose descriptions and locations indicate flooding in or near the city. Require that each selected event coincides with high water at a nearby USGS gauge and has clearly documented impacts. For each such event, find a pre-storm and post-storm Sentinel-1 scene over the area, within roughly 30 days before and a few days after the event, preferring scenes from the same satellite orbit so viewing geometry is consistent. When several NOAA events use exactly the same before/after radar pair, treat them as a single composite event so the hotspot map does not double-count that pair.
@@ -237,10 +239,27 @@ NOAA validation: The 500 m / 1000 m hit rates are computed using the flood mask 
 
 ---
 
+## Conclusion
+
+TBD: Update or verify details (e.g. validation percentages, Raleigh vs Houston pattern wording) once final results are in.
+
+- We built data-driven urban flood hotspot maps from real storms by combining NOAA flood reports, USGS gauges, and Sentinel-1 radar, instead of relying on synthetic scenarios or river-only models.
+
+- TBD: Hotspots show distinct patterns in the two cities—e.g. Raleigh along Crabtree Creek and urban drainage corridors; Houston more widespread around Buffalo Bayou and low-lying areas affected by events like Harvey. Verify against final maps.
+
+- TBD: Validation shows good agreement with independent observations: a large share of NOAA-reported flood locations fall within 500–1000 m of mapped flood pixels; for Harvey, radar-derived extent can be compared to high-resolution aerial imagery. Replace "large share" with actual % once computed.
+
+- The method is transferable and complementary: it uses globally available radar and simple thresholds, so it can be applied in other cities (including gauge-sparse areas) and used alongside hydraulic models and FEMA-style maps.
+
+- Hotspot maps can support planning, equity, and infrastructure decisions when combined with social vulnerability and critical-infrastructure data to prioritize mitigation and emergency preparedness.
+
+---
+
 ## Suggested poster layout
 
 | Section | Element | Content |
 |--------|--------|--------|
+| Method | Study area | 1–2 sentences per city: Raleigh (inland, Crabtree Creek); Houston (coastal, Harvey/major storms). Why two cities (different regimes). |
 | Method | Overview + steps | 1 short para + bullet list (event selection, S1 match, flood detection, aggregation). Keep compact. |
 | Results | Funnel | Table or diagram: NOAA → location filter → USGS → S1 matched → in hotspot (Raleigh + Houston counts) |
 | Results | Maps | Raleigh and Houston hotspot maps side by side |
@@ -251,11 +270,12 @@ NOAA validation: The 500 m / 1000 m hit rates are computed using the flood mask 
 | Results | Pipeline | Short bullet list of algorithm steps (optional) |
 | Results | Data | One-line or short list of data sources (or "See Datasets") |
 | Datasets | Data table/list | One row per dataset: name and role (flood detection, event selection, masks, validation). |
+| Conclusion | Bullets | See Conclusion section; update TBD items when final results are in. |
 
 Other poster elements (optional)
 - Title and author(s).
 - Abstract: short block (e.g. from Plain-language summary + one sentence on results).
-- Conclusion or key takeaway: 1–2 sentences (e.g. "Urban flood hotspots from real storms can support planning and equity analysis.").
+- Conclusion: use the Conclusion section bullets (and replace TBD text with final numbers/wording).
 - Acknowledgments and/or funding.
 - References: 2–4 key papers (e.g. SAR flood mapping, NOAA/USGS use).
 - QR code or link to code/repo or project page.

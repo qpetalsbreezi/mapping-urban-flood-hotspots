@@ -4,6 +4,40 @@ Use this as a checklist and source of numbers/figures for the **Results** sectio
 
 ---
 
+## 0. Contributions and abstract hooks
+
+Use this section when drafting the **abstract** and the **\"intellectual merit / broader impacts\"** portions of the project description.
+
+### Main contributions (intellectual merit)
+
+- **Flood heatmaps from real storms, not synthetic scenarios**  
+  Uses actual historical storm events (NOAA + USGS) to build hotspot maps, instead of relying on hypothetical or synthetic storms.
+
+- **Captures more than just riverine flooding**  
+  Focuses on urban flooding in streets, neighborhoods, and built-up areas (via WorldCover + NLCD), not only along rivers and main channels.
+
+- **Works even where gauge data are sparse**  
+  Once calibrated with a handful of well-observed events, the SAR-based method can be applied in places with limited or no long-term stream gauge records.
+
+- **Robust to changing storm patterns**  
+  Because the method aggregates many events and (optionally) can weight recent ones more heavily than older ones, it can adapt as flood patterns shift with climate and land-use change.
+
+### Broader impacts
+
+- **Can be combined with other flooding data**  
+  Flood hotspot maps can be overlaid with insurance claims, 911 calls, road closure data, and community reports to create a more comprehensive picture of flood risk.
+
+- **Useful for mitigation planning and emergency management**  
+  Hotspots can help cities prioritize infrastructure upgrades, green infrastructure, and maintenance, and can inform where to focus warnings, evacuation routes, and emergency alerts.
+
+- **Equity and environmental justice analysis**  
+  Overlay flood hotspots with census and social vulnerability data to identify neighborhoods that flood repeatedly but have fewer resources, supporting more equitable investments.
+
+- **Critical infrastructure and lifeline protection**  
+  Intersect hotspots with hospitals, schools, fire stations, power and water facilities, and key roads/bridges to prioritize hardening and maintain access during floods.
+
+---
+
 ## 1. Event selection funnel (include this)
 
 Showing how many events remain after each filter makes the method transparent and defensible. Use a **table or diagram** (e.g. funnel or flow).

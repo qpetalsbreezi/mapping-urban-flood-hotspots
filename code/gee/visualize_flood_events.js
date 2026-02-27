@@ -1497,9 +1497,10 @@ if (before && after) {
   ));
 }
 
+// AOI as red outline only (no fill)
 Map.addLayer(
-  ee.Image().paint(focusAOI, 1, 2),
-  {palette: 'red'},
+  focusAOI,
+  {color: 'red', fillColor: '00000000'},
   eventInfo.label + (eventInfo.sentinel1.after && eventInfo.sentinel1.after.date ? ' (' + eventInfo.sentinel1.after.date + ')' : '') + ' AOI'
 );
 

@@ -1246,13 +1246,9 @@ Map.addLayer(
   'Flood Hotspot Map (' + selectedCity + ')'
 );
 
-// Add AOI outline
-Map.addLayer(
-  focusAOI,
-  {color: 'blue', fillColor: '00000000'},
-  'AOI',
-  false
-);
+// Add AOI (just box outline — line only, no fill)
+var aoiOutline = ee.Geometry.LineString(focusAOI.coordinates().get(0));
+Map.addLayer(aoiOutline, {color: 'red'}, 'AOI', true);
 
 // Print statistics
 var maxFrequency = frequencyMap.reduceRegion({

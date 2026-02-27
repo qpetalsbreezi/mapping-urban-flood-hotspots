@@ -1077,8 +1077,12 @@ for (var i = 0; i < floodEvents.length; i++) {
 
 print('Events with valid flood masks:', maskList.length);
 
-// Build per-event NOAA validation (SAR, before urban mask) and print match % for each event
+// Build aggregate flood map (pre-urban): pixel = 1 if any event had flood there. Validate all NOAA points against this single map.
+var aggregateValidationMask = ee.ImageCollection.fromImages(preUrbanMaskList).sum().gte(1).rename('flood');
+
+// Build per-event list (for table) and merge all points for map-based validation
 var validationFeatures = [];
+var allPoints = ee.FeatureCollection([]);
 for (var j = 0; j < preUrbanMaskList.length; j++) {
   var idx = eventIndexForMask[j];
   var ev = floodEvents[idx];
@@ -1089,21 +1093,21 @@ for (var j = 0; j < preUrbanMaskList.length; j++) {
   validationFeatures.push(ee.Feature(null, {
     eventId: ev.id,
     label: ev.label,
-    mask: preUrbanMaskList[j],
     points: pointsFC
   }));
+  allPoints = allPoints.merge(pointsFC);
 }
-var validationFC = ee.FeatureCollection(validationFeatures);
+allPoints = allPoints.filterBounds(focusAOI);
 
+// Per-event stats: each event's points checked against the aggregate map (for table)
 function addValidationStats(f) {
-  var mask = ee.Image(f.get('mask'));
   var points = ee.FeatureCollection(f.get('points'));
   var pointsInAOI = points.filterBounds(focusAOI);
   var total = pointsInAOI.size();
   function hitRateAtBuffer(bufferM) {
     var withBuffer = pointsInAOI.map(function(pt) {
       var buf = pt.geometry().buffer(bufferM);
-      var maxVal = mask.reduceRegion({
+      var maxVal = aggregateValidationMask.reduceRegion({
         geometry: buf,
         reducer: ee.Reducer.max(),
         scale: 100,
@@ -1128,9 +1132,52 @@ function addValidationStats(f) {
   });
 }
 
-validationFC = validationFC.map(addValidationStats);
-// pts = NOAA location points in AOI (can be 2 per report when using begin+end coords). Composite = multiple NOAA event IDs.
-print('NOAA point validation (SAR, before urban mask) — match % per event:');
+var validationFC = ee.FeatureCollection(validationFeatures).map(addValidationStats);
+
+// Validation against aggregate map: sample at each point (500 m and 1000 m buffers)
+var pointsWithHits = allPoints.map(function(pt) {
+  var v500 = aggregateValidationMask.reduceRegion({
+    geometry: pt.geometry().buffer(500),
+    reducer: ee.Reducer.max(),
+    scale: 100,
+    bestEffort: true
+  }).get('flood');
+  var v1000 = aggregateValidationMask.reduceRegion({
+    geometry: pt.geometry().buffer(1000),
+    reducer: ee.Reducer.max(),
+    scale: 100,
+    bestEffort: true
+  }).get('flood');
+  return pt.set({
+    hit500: ee.Number(v500).gte(1).toInt(),
+    hit1000: ee.Number(v1000).gte(1).toInt()
+  });
+});
+var totalCount = pointsWithHits.size();
+var sum500Result = pointsWithHits.reduceColumns(ee.Reducer.sum(), ['hit500']);
+var sum1000Result = pointsWithHits.reduceColumns(ee.Reducer.sum(), ['hit1000']);
+var summaryDict = ee.Dictionary({
+  total: totalCount,
+  sum500: sum500Result.get('sum'),
+  sum1000: sum1000Result.get('sum')
+});
+print('Validation against aggregate flood map (all events, pre-urban mask):');
+summaryDict.evaluate(function(s) {
+  var tot = s.total;
+  if (tot > 0) {
+    var pct500 = Math.round(100 * (s.sum500 || 0) / tot);
+    var pct1000 = Math.round(100 * (s.sum1000 || 0) / tot);
+    print('  Total NOAA points in AOI: ' + tot);
+    print('  500 m:  ' + (s.sum500 || 0) + '/' + tot + ' = ' + pct500 + '%');
+    print('  1000 m: ' + (s.sum1000 || 0) + '/' + tot + ' = ' + pct1000 + '%');
+  } else {
+    print('  No NOAA points inside AOI.');
+  }
+  print('');
+});
+
+// Per-event table (same map; breakdown by event)
+print('NOAA point validation — per event (same aggregate map):');
 validationFC.evaluate(function(result) {
   if (result.features && result.features.length > 0) {
     var pad = function(s, n) {

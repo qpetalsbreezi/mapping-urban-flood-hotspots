@@ -26,7 +26,7 @@ var multiImageMaxCount = 5;   // Maximum number of images to average
 
 // Adaptive threshold: derive threshold from each scene instead of fixed dB
 // Set to true to use scene percentile (clamped); false = use fixed vvVhThreshold / vvOnlyThreshold
-var useAdaptiveThreshold = false;
+var useAdaptiveThreshold = true;
 
 // ============================================================================
 // FLOOD DETECTION PARAMETERS (SHARED WITH visualize_flood_events.js)
@@ -43,8 +43,8 @@ var FLOOD_DETECTION_CONFIG = {
   vvOnlyThreshold: -2.0,  // dB - stricter threshold when only VV is available
   
   // Adaptive threshold (when useAdaptiveThreshold is true): percentile of VV change, clamped
-  adaptivePercentile: 5,       // use this percentile of change image over AOI
-  adaptiveThresholdMin: -3.5,   // clamp threshold to no more negative than this (dB)
+  adaptivePercentile: 7,       // use this percentile of change image over AOI
+  adaptiveThresholdMin: -2.8,   // clamp threshold to no more negative than this (dB)
   adaptiveThresholdMax: -1.0,   // clamp threshold to no less negative than this (dB)
   
   // Speckle removal
@@ -1156,21 +1156,41 @@ var pointsWithHits = allPoints.map(function(pt) {
 var totalCount = pointsWithHits.size();
 var sum500Result = pointsWithHits.reduceColumns(ee.Reducer.sum(), ['hit500']);
 var sum1000Result = pointsWithHits.reduceColumns(ee.Reducer.sum(), ['hit1000']);
+// Flood pixel % over AOI (for tuning: balance hit rate vs over-detection)
+var floodPixelSum = aggregateValidationMask.unmask(0).reduceRegion({
+  reducer: ee.Reducer.sum(),
+  geometry: focusAOI,
+  scale: 100,
+  bestEffort: true
+}).get('flood');
+var totalPixelCount = ee.Image.constant(1).reduceRegion({
+  reducer: ee.Reducer.count(),
+  geometry: focusAOI,
+  scale: 100,
+  bestEffort: true
+}).get('constant');
 var summaryDict = ee.Dictionary({
   total: totalCount,
   sum500: sum500Result.get('sum'),
-  sum1000: sum1000Result.get('sum')
+  sum1000: sum1000Result.get('sum'),
+  sumFlood: floodPixelSum,
+  totalPixels: totalPixelCount
 });
 print('Validation against aggregate flood map (all events, pre-urban mask):');
 summaryDict.evaluate(function(s) {
   var tot = s.total;
+  var totalPx = s.totalPixels || 1;
+  var floodPx = s.sumFlood || 0;
+  var pctFlood = totalPx > 0 ? Math.round(100 * floodPx / totalPx) : 0;
   if (tot > 0) {
     var pct500 = Math.round(100 * (s.sum500 || 0) / tot);
     var pct1000 = Math.round(100 * (s.sum1000 || 0) / tot);
     print('  Total NOAA points in AOI: ' + tot);
+    print('  Flood pixels: ' + floodPx + ' / ' + totalPx + ' = ' + pctFlood + '% of AOI');
     print('  500 m:  ' + (s.sum500 || 0) + '/' + tot + ' = ' + pct500 + '%');
     print('  1000 m: ' + (s.sum1000 || 0) + '/' + tot + ' = ' + pct1000 + '%');
   } else {
+    print('  Flood pixels: ' + floodPx + ' / ' + totalPx + ' = ' + pctFlood + '% of AOI');
     print('  No NOAA points inside AOI.');
   }
   print('');

@@ -27,7 +27,7 @@ var multiImageMaxCount = 5;   // Maximum number of images to average
 
 // Adaptive threshold: derive threshold from each scene instead of fixed dB
 // Set to true to use scene percentile (clamped); false = use fixed vvVhThreshold / vvOnlyThreshold
-var useAdaptiveThreshold = false;
+var useAdaptiveThreshold = true;
 
 // ============================================================================
 // FLOOD DETECTION PARAMETERS (SHARED WITH generate_flood_hotspots.js)
@@ -44,8 +44,8 @@ var FLOOD_DETECTION_CONFIG = {
   vvOnlyThreshold: -2.0,  // dB - stricter threshold when only VV is available
   
   // Adaptive threshold (when useAdaptiveThreshold is true): percentile of VV change, clamped
-  adaptivePercentile: 5,       // use this percentile of change image over AOI
-  adaptiveThresholdMin: -3.5,   // clamp threshold to no more negative than this (dB)
+  adaptivePercentile: 7,       // use this percentile of change image over AOI
+  adaptiveThresholdMin: -2.8,   // clamp threshold to no more negative than this (dB)
   adaptiveThresholdMax: -1.0,   // clamp threshold to no less negative than this (dB)
   
   // Speckle removal

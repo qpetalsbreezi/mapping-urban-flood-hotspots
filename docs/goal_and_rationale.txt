@@ -1,0 +1,10 @@
+Project Title: Safeguarding Cities from Flash Floods: A Novel Multi-Sensor System for Predicting Urban Flood Hotspots
+
+Rationale
+Flash floods are among the most dangerous and unpredictable natural disasters in cities, causing severe property damage, traffic disruption, and loss of life. As climate change increases the intensity of extreme rainfall, urban areas are becoming more vulnerable to sudden and localized flooding (Tellman et al., 2021).
+Mapping floods in cities is technically challenging. Dense infrastructure causes radar shadowing and distortion in satellite images, while paved surfaces such as roads and rooftops often resemble floodwater in both radar and optical data (Chini et al., 2019; Mason et al., 2021). 
+Urban floods also develop and recede quickly, making it difficult to capture them within standard satellite revisit cycles, a limitation highlighted in several flood-mapping studies using Sentinel-1 and Sentinel-2 (Twele et al., 2016; Zhu & Woodcock, 2012).
+Recent advances in remote sensing offer opportunities to overcome these limitations by combining complementary data sources, synthetic aperture radar (SAR), optical imagery, and ground-based measurements. Prior research shows that SAR can penetrate clouds and detect surface water even in dense urban areas, while optical and infrared data provide detailed land-cover and moisture information (McFeeters, 1996; Xu, 2006). Integrating these with ground observations has been shown to improve flood detection accuracy in complex environments (Li et al., 2019). This research builds on these findings by applying a multi-sensor approach to identify and predict urban flood-prone zones, supporting better preparedness and response in urban environments.
+
+Project Goal
+To develop a remote-sensing–based model that integrates satellite imagery and ground observations to identify and predict recurring urban flood hotspots, enabling data-driven strategies for flood mitigation, infrastructure planning, and emergency response in urban environments.

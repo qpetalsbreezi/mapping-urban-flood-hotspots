@@ -11,11 +11,11 @@ This project maps recurring urban flood hotspots in **Raleigh, NC** and **Housto
 - `data/external/` - Reference data and ground truth (e.g., Harvey aerial imagery links, land‑cover datasets)
 
 ### Code Organization
-- `code/gee/generate_flood_hotspots.js` – Earth Engine script to build aggregate hotspot maps and run NOAA‑point validation.
-- `code/gee/visualize_flood_events.js` – Event viewer for individual storms (before/after Sentinel‑1, optional optical, and flood masks).
-- `code/helpers/match_event_imagery.py` – Python helper to match NOAA events to Sentinel‑1/2 and Landsat imagery and export event/imagery CSVs.
-- `code/helpers/filter_noaa_events.py` – Filters NOAA Storm Events and joins with USGS gauge data to select major flood events.
-- `code/helpers/csv_to_js_events.py` – Converts event/imagery CSV into the JavaScript event configuration used by the GEE scripts.
+- `code/gee_mapping/generate_flood_hotspots.js` – Earth Engine script to build aggregate hotspot maps and run NOAA‑point validation.
+- `code/gee_mapping/visualize_flood_events.js` – Event viewer for individual storms (before/after Sentinel‑1, optional optical, and flood masks).
+- `code/event_selection/match_event_imagery.py` – Python helper to match NOAA events to Sentinel‑1/2 and Landsat imagery and export event/imagery CSVs.
+- `code/event_selection/filter_noaa_events.py` – Filters NOAA Storm Events and joins with USGS gauge data to select major flood events.
+- `code/event_selection/csv_to_js_events.py` – Converts event/imagery CSV into the JavaScript event configuration used by the GEE scripts.
 
 ### Documentation
 - `docs/abstract.txt` – Science‑fair abstract.
@@ -47,6 +47,6 @@ This project maps recurring urban flood hotspots in **Raleigh, NC** and **Housto
 - Documentation for event selection, validation design, and science‑fair abstract/poster content.
 
 ## Dependencies (non‑exhaustive)
-- Google Earth Engine (for `code/gee/*.js` scripts).
-- Python 3.10+ (for helper scripts in `code/helpers/*.py`).
+- Google Earth Engine (for `code/gee_mapping/*.js` scripts).
+- Python 3.10+ (for helper scripts in `code/event_selection/*.py`).
 - Common Python packages: `pandas`, `geopandas` (optional), and Earth Engine Python API if running `match_event_imagery.py` locally.

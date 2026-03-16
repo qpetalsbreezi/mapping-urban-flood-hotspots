@@ -46,31 +46,10 @@ venv.bak/
 *~
 
 # Data files (large datasets)
-# Satellite data - too large for GitHub
-data/raw/*/satellite/
-data/raw/*/sentinel1/
-data/raw/*/sentinel2/
-data/raw/*/*.SAFE/
-data/raw/*/*.tif
-data/raw/*/*.tiff
-data/processed/*/*.tif
-data/processed/*/*.tiff
+# Keep generic large-binary patterns, but allow project-specific files that don't exist yet
 *.hdf5
 *.nc
 *.grib
-
-# Results (large output files)
-results/maps/*.tif
-results/maps/*.tiff
-results/plots/*.png
-results/plots/*.jpg
-results/plots/*.pdf
-
-# Local analysis experiments (not tracked)
-data/processed/raleigh/flood_detection_comparison.png
-data/processed/raleigh/gee_flood_detection.py
-data/processed/raleigh/gee_flood_visualization.png
-data/processed/raleigh/simple_flood_analysis.py
 
 # Temporary files
 temp/

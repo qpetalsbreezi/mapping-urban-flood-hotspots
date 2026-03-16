@@ -13,9 +13,9 @@ This project maps recurring urban flood hotspots in **Raleigh, NC** and **Housto
 ### Code Organization
 - `code/gee/generate_flood_hotspots.js` – Earth Engine script to build aggregate hotspot maps and run NOAA‑point validation.
 - `code/gee/visualize_flood_events.js` – Event viewer for individual storms (before/after Sentinel‑1, optional optical, and flood masks).
-- `code/gee/match_event_imagery.py` – Python helper to match NOAA events to Sentinel‑1/2 and Landsat imagery and export event/imagery CSVs.
-- `code/gee/filter_noaa_events.py` – Filters NOAA Storm Events and joins with USGS gauge data to select major flood events.
-- `code/gee/csv_to_js_events.py` – Converts event/imagery CSV into the JavaScript event configuration used by the GEE scripts.
+- `code/helpers/match_event_imagery.py` – Python helper to match NOAA events to Sentinel‑1/2 and Landsat imagery and export event/imagery CSVs.
+- `code/helpers/filter_noaa_events.py` – Filters NOAA Storm Events and joins with USGS gauge data to select major flood events.
+- `code/helpers/csv_to_js_events.py` – Converts event/imagery CSV into the JavaScript event configuration used by the GEE scripts.
 
 ### Documentation
 - `docs/abstract.txt` – Science‑fair abstract.
@@ -48,5 +48,5 @@ This project maps recurring urban flood hotspots in **Raleigh, NC** and **Housto
 
 ## Dependencies (non‑exhaustive)
 - Google Earth Engine (for `code/gee/*.js` scripts).
-- Python 3.10+ (for helper scripts in `code/gee/*.py`).
+- Python 3.10+ (for helper scripts in `code/helpers/*.py`).
 - Common Python packages: `pandas`, `geopandas` (optional), and Earth Engine Python API if running `match_event_imagery.py` locally.

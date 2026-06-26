@@ -1,5 +1,7 @@
 # Validation Process Assessment
 
+> **Updated:** See [`validation_independence.md`](validation_independence.md) for the current held-out train/test protocol (reviewer comments 1 and 2). The aggregate-all validation described below is **deprecated** for headline metrics.
+
 This document summarizes whether our evaluation process (SAR-derived flood map vs. NOAA report locations) is methodologically sound, based on the current implementation and common practice in the literature.
 
 ---

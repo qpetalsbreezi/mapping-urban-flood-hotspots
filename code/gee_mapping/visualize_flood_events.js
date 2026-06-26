@@ -25,9 +25,8 @@ var useMultiImageBaseline = false;
 var multiImageDaysBefore = 30;  // Days before event to search for pre-event images
 var multiImageMaxCount = 5;   // Maximum number of images to average
 
-// Adaptive threshold: derive threshold from each scene instead of fixed dB
-// Set to true to use scene percentile (clamped); false = use fixed vvVhThreshold / vvOnlyThreshold
-var useAdaptiveThreshold = true;
+// Adaptive threshold: MUST be false for held-out validation (docs/validation_independence.md)
+var useAdaptiveThreshold = false;
 
 // ============================================================================
 // FLOOD DETECTION PARAMETERS (SHARED WITH generate_flood_hotspots.js)

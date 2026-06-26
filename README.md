@@ -1,7 +1,7 @@
 # Mapping Urban Flood Hotspots with Sentinel‑1
 
 ## Project Overview
-This project maps recurring urban flood hotspots in **Raleigh, NC** and **Houston, TX** using Sentinel‑1 SAR imagery combined with NOAA Storm Events flood reports and USGS stream gauge data. For each city, historical flood events (2010–2025) are filtered using location criteria and high water levels, matched to pre‑ and post‑storm Sentinel‑1 image pairs, converted into per‑event flood masks, and then aggregated into multi‑event flood frequency maps. Validation compares the aggregate SAR‑derived flood extent to NOAA flood report locations (within 500 m and 1000 m) and, for Hurricane Harvey, independent aerial imagery.
+This project maps recurring urban flood hotspots in **Raleigh, NC** and **Houston, TX** using Sentinel‑1 SAR imagery combined with NOAA Storm Events flood reports and USGS stream gauge data. The study period is **2015–2025**, aligned with Sentinel‑1 availability. For each city, flood events are filtered using location criteria and high water levels, matched to pre‑ and post‑storm Sentinel‑1 image pairs, converted into per‑event flood masks, and aggregated into multi‑event flood frequency maps. Validation uses independent NOAA locations from events without SAR coverage against an ever‑flooded map built from SAR events.
 
 ## Project Structure
 
@@ -20,14 +20,15 @@ This project maps recurring urban flood hotspots in **Raleigh, NC** and **Housto
 ### Documentation
 - `docs/abstract.txt` – Science‑fair abstract.
 - `docs/poster_content.txt` – Draft content and layout notes for the poster.
-- `docs/event_selection_methodology.md` – Detailed description of how flood events were selected (NOAA + USGS, 2010–2025).
+- `docs/event_selection_methodology.md` – Detailed description of how flood events were selected (NOAA + USGS, 2015–2025).
 - `docs/harvey_validation.md` – Notes on Harvey (2017) validation using NOAA aerial imagery.
-- `docs/validation_assessment.md` – Discussion of the evaluation design (NOAA points, buffers, aggregate map) and its strengths/limitations.
+- `docs/validation_independence.md` – Held-out validation protocol (N−M independent test).
+- `docs/study_description_and_results.md` – Summary of revised methodology and final validation numbers.
 - `docs/goal_and_rationale.txt` – Plain‑language explanation of the project goal and why it matters.
 
 ## Methodology (High Level)
-1. **Event Selection (2010–2025)**  
-   Filter NOAA Storm Events for Wake County (Raleigh) and Harris County (Houston) using location keywords and impact descriptions, then require high water levels at USGS gauges (Crabtree Creek and Buffalo Bayou) to identify major urban flood events.
+1. **Event Selection (2015–2025)**  
+   Filter NOAA Storm Events for Wake County (Raleigh) and Harris County (Houston) using location keywords and impact descriptions, then require high water levels at USGS gauges (Crabtree Creek and Buffalo Bayou) to identify major urban flood events. Events before 2015 are excluded because Sentinel‑1 was not operational.
 
 2. **Event–Imagery Matching**  
    For each selected event, use `match_event_imagery.py` to find suitable pre‑ and post‑storm Sentinel‑1 GRD scenes (same orbit, within a few days of the event) and optional Sentinel‑2/Landsat optical scenes.
@@ -39,12 +40,17 @@ This project maps recurring urban flood hotspots in **Raleigh, NC** and **Housto
    For each city, sum all per‑event flood masks to create a frequency map (how many events flooded each pixel) and classify it into hotspot levels (e.g., 1 event, 2–3 events, 4+ events).
 
 5. **Validation**  
-   Compare the aggregate (pre‑urban) flood map to NOAA flood report locations using 500 m and 1000 m buffers around each point (hit rate), and visually compare Hurricane Harvey flood extent with NOAA aerial imagery.
+   Build an ever-flooded map from all M events (Sentinel-1 coverage). Independently validate using NOAA locations from N−M events (no SAR) that never entered the map. See [`docs/validation_independence.md`](docs/validation_independence.md).
 
 ## Key Outputs
 - Urban flood hotspot maps for Raleigh, NC and Houston, TX (Sentinel‑1–based frequency maps).
-- Summary statistics on hotspot areas, event counts, and validation hit rates (500 m / 1000 m).
+- Summary statistics on hotspot areas, event counts, and independent validation recall (100 m / 250 m / 500 m / 1000 m).
 - Documentation for event selection, validation design, and science‑fair abstract/poster content.
+
+## Validation setup
+- Protocol: [`docs/validation_independence.md`](docs/validation_independence.md)
+- Regenerate N−M test points: `python3 code/validation/build_independent_validation.py`
+- GEE: load `code/gee_mapping/independent_validation_locations.js` + `generate_flood_hotspots.js`
 
 ## Dependencies (non‑exhaustive)
 - Google Earth Engine (for `code/gee_mapping/*.js` scripts).

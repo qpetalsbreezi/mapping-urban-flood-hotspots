@@ -1,0 +1,961 @@
+{
+  "version": "2.1",
+  "study_period": {
+    "start_year": 2015,
+    "end_year": 2025
+  },
+  "approach": "ever_flooded_map_with_independent_noaa_test",
+  "description": "Study period 2015-2025 (Sentinel-1 era). M events (SAR) build the ever-flooded map. N-M NOAA events (no SAR) provide independent test locations. Cities are independent.",
+  "locked_thresholds": {
+    "vv_vh_threshold_db": -1.8,
+    "vv_only_threshold_db": -2.0,
+    "use_adaptive_threshold": false,
+    "tuned_on": "train_subset_of_M_per_city",
+    "tuned_using_noaa_from": "M_train_events_only"
+  },
+  "validation_metric": {
+    "name": "buffered_detection_recall",
+    "map_layer": "ever_flooded_union_of_all_M_events",
+    "reference": "noaa_locations_from_N_minus_M_events",
+    "buffers_m": [
+      100,
+      250,
+      500,
+      1000
+    ],
+    "generous": true
+  },
+  "cities": {
+    "raleigh": {
+      "city": "raleigh",
+      "counts": {
+        "noaa_with_coords": 49,
+        "m_sar_linked_noaa_points": 12,
+        "nm_independent_test_points": 37,
+        "sar_composite_events_in_map": 5,
+        "sar_composite_events_for_threshold_train": 2
+      },
+      "sar_noaa_event_ids": [
+        "1029187",
+        "1047652",
+        "1173317",
+        "1197141",
+        "1208432",
+        "1208861",
+        "755610",
+        "775029",
+        "775031",
+        "775032",
+        "775034",
+        "775037"
+      ],
+      "threshold_train_composite_ids": [
+        "755610",
+        "775029_and_1_more"
+      ],
+      "map_composite_ids": [
+        "755610",
+        "775029_and_1_more",
+        "1029187",
+        "1173317",
+        "1208432"
+      ],
+      "independent_test_points": [
+        {
+          "event_id": "610222",
+          "event_date": "12/30/2015",
+          "location": "WILDERS GROVE",
+          "lat": 35.7822,
+          "lon": -78.5941,
+          "desc": "WILDERS GROVE (12/30/2015)"
+        },
+        {
+          "event_id": "653659",
+          "event_date": "07/16/2016",
+          "location": "MORRISVILLE",
+          "lat": 35.8114,
+          "lon": -78.794,
+          "desc": "MORRISVILLE (07/16/2016)"
+        },
+        {
+          "event_id": "653729",
+          "event_date": "07/17/2016",
+          "location": "RALEIGH",
+          "lat": 35.8203,
+          "lon": -78.6393,
+          "desc": "RALEIGH (07/17/2016)"
+        },
+        {
+          "event_id": "696352",
+          "event_date": "04/25/2017",
+          "location": "(RDU)RALEIGH-DURHAM",
+          "lat": 35.908,
+          "lon": -78.7933,
+          "desc": "(RDU)RALEIGH-DURHAM (04/25/2017)"
+        },
+        {
+          "event_id": "710139",
+          "event_date": "06/16/2017",
+          "location": "(RDU)RALEIGH-DURHAM",
+          "lat": 35.83,
+          "lon": -78.76,
+          "desc": "(RDU)RALEIGH-DURHAM (06/16/2017)"
+        },
+        {
+          "event_id": "781161",
+          "event_date": "08/19/2018",
+          "location": "COLLEGE VIEW",
+          "lat": 35.77,
+          "lon": -78.69,
+          "desc": "COLLEGE VIEW (08/19/2018)"
+        },
+        {
+          "event_id": "781162",
+          "event_date": "08/19/2018",
+          "location": "RALEIGH",
+          "lat": 35.79,
+          "lon": -78.64,
+          "desc": "RALEIGH (08/19/2018)"
+        },
+        {
+          "event_id": "781163",
+          "event_date": "08/19/2018",
+          "location": "MILLBROOK",
+          "lat": 35.86,
+          "lon": -78.64,
+          "desc": "MILLBROOK (08/19/2018)"
+        },
+        {
+          "event_id": "781167",
+          "event_date": "08/20/2018",
+          "location": "RALEIGH",
+          "lat": 35.8049,
+          "lon": -78.623,
+          "desc": "RALEIGH (08/20/2018)"
+        },
+        {
+          "event_id": "781168",
+          "event_date": "08/20/2018",
+          "location": "FAWLERS XRDS",
+          "lat": 35.87,
+          "lon": -78.58,
+          "desc": "FAWLERS XRDS (08/20/2018)"
+        },
+        {
+          "event_id": "781182",
+          "event_date": "08/20/2018",
+          "location": "RALEIGH",
+          "lat": 35.8,
+          "lon": -78.63,
+          "desc": "RALEIGH (08/20/2018)"
+        },
+        {
+          "event_id": "781183",
+          "event_date": "08/20/2018",
+          "location": "ECHO HGTS",
+          "lat": 35.76,
+          "lon": -78.64,
+          "desc": "ECHO HGTS (08/20/2018)"
+        },
+        {
+          "event_id": "820628",
+          "event_date": "04/15/2019",
+          "location": "MILLBROOK",
+          "lat": 35.8209,
+          "lon": -78.6131,
+          "desc": "MILLBROOK (04/15/2019)"
+        },
+        {
+          "event_id": "874988",
+          "event_date": "02/06/2020",
+          "location": "RALEIGH",
+          "lat": 35.8,
+          "lon": -78.65,
+          "desc": "RALEIGH (02/06/2020)"
+        },
+        {
+          "event_id": "919574",
+          "event_date": "08/31/2020",
+          "location": "RALEIGH",
+          "lat": 35.7854,
+          "lon": -78.6369,
+          "desc": "RALEIGH (08/31/2020)"
+        },
+        {
+          "event_id": "922269",
+          "event_date": "09/01/2020",
+          "location": "BROOKHAVEN",
+          "lat": 35.8439,
+          "lon": -78.6554,
+          "desc": "BROOKHAVEN (09/01/2020)"
+        },
+        {
+          "event_id": "1004729",
+          "event_date": "01/03/2022",
+          "location": "CARALEIGH",
+          "lat": 35.77,
+          "lon": -78.65,
+          "desc": "CARALEIGH (01/03/2022)"
+        },
+        {
+          "event_id": "1013191",
+          "event_date": "03/17/2022",
+          "location": "RALEIGH",
+          "lat": 35.7806,
+          "lon": -78.6434,
+          "desc": "RALEIGH (03/17/2022)"
+        },
+        {
+          "event_id": "1028357",
+          "event_date": "05/07/2022",
+          "location": "RALEIGH",
+          "lat": 35.7808,
+          "lon": -78.6754,
+          "desc": "RALEIGH (05/07/2022)"
+        },
+        {
+          "event_id": "1029189",
+          "event_date": "05/27/2022",
+          "location": "BURT",
+          "lat": 35.62,
+          "lon": -78.89,
+          "desc": "BURT (05/27/2022)"
+        },
+        {
+          "event_id": "1047668",
+          "event_date": "07/07/2022",
+          "location": "RALEIGH",
+          "lat": 35.79,
+          "lon": -78.65,
+          "desc": "RALEIGH (07/07/2022)"
+        },
+        {
+          "event_id": "1047597",
+          "event_date": "07/15/2022",
+          "location": "(RDU)RALEIGH-DURHAM",
+          "lat": 35.919,
+          "lon": -78.7893,
+          "desc": "(RDU)RALEIGH-DURHAM (07/15/2022)"
+        },
+        {
+          "event_id": "1047599",
+          "event_date": "07/15/2022",
+          "location": "BROOKHAVEN",
+          "lat": 35.84,
+          "lon": -78.67,
+          "desc": "BROOKHAVEN (07/15/2022)"
+        },
+        {
+          "event_id": "1047605",
+          "event_date": "07/15/2022",
+          "location": "CAMP POLK",
+          "lat": 35.85,
+          "lon": -78.71,
+          "desc": "CAMP POLK (07/15/2022)"
+        },
+        {
+          "event_id": "1053676",
+          "event_date": "08/11/2022",
+          "location": "RALEIGH",
+          "lat": 35.8,
+          "lon": -78.62,
+          "desc": "RALEIGH (08/11/2022)"
+        },
+        {
+          "event_id": "1117393",
+          "event_date": "07/08/2023",
+          "location": "COLLEGE VIEW",
+          "lat": 35.78,
+          "lon": -78.7,
+          "desc": "COLLEGE VIEW (07/08/2023)"
+        },
+        {
+          "event_id": "1117420",
+          "event_date": "07/09/2023",
+          "location": "RALEIGH",
+          "lat": 35.7919,
+          "lon": -78.6413,
+          "desc": "RALEIGH (07/09/2023)"
+        },
+        {
+          "event_id": "1141263",
+          "event_date": "09/09/2023",
+          "location": "WESTOVER",
+          "lat": 35.79,
+          "lon": -78.72,
+          "desc": "WESTOVER (09/09/2023)"
+        },
+        {
+          "event_id": "1204072",
+          "event_date": "07/18/2024",
+          "location": "(RDU)RALEIGH-DURHAM",
+          "lat": 35.8652,
+          "lon": -78.7793,
+          "desc": "(RDU)RALEIGH-DURHAM (07/18/2024)"
+        },
+        {
+          "event_id": "1204074",
+          "event_date": "07/18/2024",
+          "location": "RALEIGH",
+          "lat": 35.791,
+          "lon": -78.6288,
+          "desc": "RALEIGH (07/18/2024)"
+        },
+        {
+          "event_id": "1204127",
+          "event_date": "07/25/2024",
+          "location": "CAMP POLK",
+          "lat": 35.84,
+          "lon": -78.69,
+          "desc": "CAMP POLK (07/25/2024)"
+        },
+        {
+          "event_id": "1209144",
+          "event_date": "08/08/2024",
+          "location": "MILLBROOK",
+          "lat": 35.8182,
+          "lon": -78.6143,
+          "desc": "MILLBROOK (08/08/2024)"
+        },
+        {
+          "event_id": "1210464",
+          "event_date": "09/01/2024",
+          "location": "RALEIGH",
+          "lat": 35.8058,
+          "lon": -78.6485,
+          "desc": "RALEIGH (09/01/2024)"
+        },
+        {
+          "event_id": "1210467",
+          "event_date": "09/01/2024",
+          "location": "(RDU)RALEIGH-DURHAM",
+          "lat": 35.8822,
+          "lon": -78.7546,
+          "desc": "(RDU)RALEIGH-DURHAM (09/01/2024)"
+        },
+        {
+          "event_id": "1216540",
+          "event_date": "09/27/2024",
+          "location": "RALEIGH",
+          "lat": 35.8035,
+          "lon": -78.6201,
+          "desc": "RALEIGH (09/27/2024)"
+        },
+        {
+          "event_id": "1245401",
+          "event_date": "03/16/2025",
+          "location": "STARMOUNT",
+          "lat": 35.85,
+          "lon": -78.59,
+          "desc": "STARMOUNT (03/16/2025)"
+        },
+        {
+          "event_id": "1245402",
+          "event_date": "03/16/2025",
+          "location": "RALEIGH",
+          "lat": 35.8,
+          "lon": -78.62,
+          "desc": "RALEIGH (03/16/2025)"
+        }
+      ],
+      "m_noaa_points": [
+        {
+          "event_id": "755610",
+          "event_date": "05/21/2018",
+          "location": "LEESVILLE",
+          "lat": 35.89,
+          "lon": -78.71,
+          "desc": "LEESVILLE (05/21/2018)"
+        },
+        {
+          "event_id": "775032",
+          "event_date": "07/06/2018",
+          "location": "WILDERS GROVE",
+          "lat": 35.8,
+          "lon": -78.61,
+          "desc": "WILDERS GROVE (07/06/2018)"
+        },
+        {
+          "event_id": "775034",
+          "event_date": "07/06/2018",
+          "location": "RALEIGH",
+          "lat": 35.79,
+          "lon": -78.64,
+          "desc": "RALEIGH (07/06/2018)"
+        },
+        {
+          "event_id": "775037",
+          "event_date": "07/06/2018",
+          "location": "MILLBROOK",
+          "lat": 35.8148,
+          "lon": -78.6198,
+          "desc": "MILLBROOK (07/06/2018)"
+        },
+        {
+          "event_id": "775029",
+          "event_date": "07/07/2018",
+          "location": "SUTPHIN",
+          "lat": 35.6332,
+          "lon": -78.7092,
+          "desc": "SUTPHIN (07/07/2018)"
+        },
+        {
+          "event_id": "775031",
+          "event_date": "07/07/2018",
+          "location": "ECHO HGTS",
+          "lat": 35.7294,
+          "lon": -78.6466,
+          "desc": "ECHO HGTS (07/07/2018)"
+        },
+        {
+          "event_id": "1029187",
+          "event_date": "05/23/2022",
+          "location": "ASBURY",
+          "lat": 35.7864,
+          "lon": -78.7353,
+          "desc": "ASBURY (05/23/2022)"
+        },
+        {
+          "event_id": "1047652",
+          "event_date": "07/09/2022",
+          "location": "BROOKHAVEN",
+          "lat": 35.84,
+          "lon": -78.66,
+          "desc": "BROOKHAVEN (07/09/2022)"
+        },
+        {
+          "event_id": "1173317",
+          "event_date": "05/25/2024",
+          "location": "RALEIGH",
+          "lat": 35.7794,
+          "lon": -78.6435,
+          "desc": "RALEIGH (05/25/2024)"
+        },
+        {
+          "event_id": "1197141",
+          "event_date": "07/12/2024",
+          "location": "RALEIGH",
+          "lat": 35.7773,
+          "lon": -78.6473,
+          "desc": "RALEIGH (07/12/2024)"
+        },
+        {
+          "event_id": "1208861",
+          "event_date": "08/03/2024",
+          "location": "RALEIGH",
+          "lat": 35.7742,
+          "lon": -78.6469,
+          "desc": "RALEIGH (08/03/2024)"
+        },
+        {
+          "event_id": "1208432",
+          "event_date": "08/04/2024",
+          "location": "WESTOVER",
+          "lat": 35.77,
+          "lon": -78.73,
+          "desc": "WESTOVER (08/04/2024)"
+        }
+      ]
+    },
+    "houston": {
+      "city": "houston",
+      "counts": {
+        "noaa_with_coords": 55,
+        "m_sar_linked_noaa_points": 26,
+        "nm_independent_test_points": 29,
+        "sar_composite_events_in_map": 10,
+        "sar_composite_events_for_threshold_train": 4
+      },
+      "sar_noaa_event_ids": [
+        "1004355",
+        "1004356",
+        "1004366",
+        "1004373",
+        "1004376",
+        "579534",
+        "675098",
+        "675235",
+        "710726",
+        "710727",
+        "710731",
+        "721084",
+        "721085",
+        "721091",
+        "721096",
+        "721101",
+        "721136",
+        "830461",
+        "830464",
+        "857803",
+        "858108",
+        "858116",
+        "858117",
+        "869176",
+        "899524",
+        "963117"
+      ],
+      "threshold_train_composite_ids": [
+        "579534",
+        "675235_and_1_more",
+        "710731",
+        "830461_and_1_more"
+      ],
+      "map_composite_ids": [
+        "579534",
+        "675235_and_1_more",
+        "710731",
+        "710726_and_1_more",
+        "721084_and_5_more",
+        "830461_and_1_more",
+        "857803_and_4_more",
+        "899524",
+        "963117",
+        "1004355_and_4_more"
+      ],
+      "independent_test_points": [
+        {
+          "event_id": "561401",
+          "event_date": "04/16/2015",
+          "location": "SOUTH HOUSTON",
+          "lat": 29.6949,
+          "lon": -95.2338,
+          "desc": "SOUTH HOUSTON (04/16/2015)"
+        },
+        {
+          "event_id": "573365",
+          "event_date": "04/17/2015",
+          "location": "LA PORTE",
+          "lat": 29.677,
+          "lon": -95.0118,
+          "desc": "LA PORTE (04/17/2015)"
+        },
+        {
+          "event_id": "579777",
+          "event_date": "05/25/2015",
+          "location": "NASSAU BAY",
+          "lat": 29.5269,
+          "lon": -95.0867,
+          "desc": "NASSAU BAY (05/25/2015)"
+        },
+        {
+          "event_id": "589615",
+          "event_date": "06/27/2015",
+          "location": "HOUSTON WEISER ARPT",
+          "lat": 29.9135,
+          "lon": -95.6411,
+          "desc": "HOUSTON WEISER ARPT (06/27/2015)"
+        },
+        {
+          "event_id": "589600",
+          "event_date": "06/30/2015",
+          "location": "GENOA ARPT",
+          "lat": 29.6499,
+          "lon": -95.1993,
+          "desc": "GENOA ARPT (06/30/2015)"
+        },
+        {
+          "event_id": "604967",
+          "event_date": "10/24/2015",
+          "location": "KATY",
+          "lat": 29.8253,
+          "lon": -95.8447,
+          "desc": "KATY (10/24/2015)"
+        },
+        {
+          "event_id": "604968",
+          "event_date": "10/31/2015",
+          "location": "ORR",
+          "lat": 29.9792,
+          "lon": -95.5426,
+          "desc": "ORR (10/31/2015)"
+        },
+        {
+          "event_id": "620705",
+          "event_date": "03/18/2016",
+          "location": "HOUSTON",
+          "lat": 29.7077,
+          "lon": -95.3876,
+          "desc": "HOUSTON (03/18/2016)"
+        },
+        {
+          "event_id": "644948",
+          "event_date": "06/01/2016",
+          "location": "HOUSTON HOOKS ARPT",
+          "lat": 30.0825,
+          "lon": -95.5677,
+          "desc": "HOUSTON HOOKS ARPT (06/01/2016)"
+        },
+        {
+          "event_id": "687236",
+          "event_date": "03/29/2017",
+          "location": "SOUTH HOUSTON",
+          "lat": 29.6627,
+          "lon": -95.2367,
+          "desc": "SOUTH HOUSTON (03/29/2017)"
+        },
+        {
+          "event_id": "714368",
+          "event_date": "07/09/2017",
+          "location": "SATSUMA",
+          "lat": 29.9191,
+          "lon": -95.6141,
+          "desc": "SATSUMA (07/09/2017)"
+        },
+        {
+          "event_id": "720858",
+          "event_date": "08/26/2017",
+          "location": "TOMBALL",
+          "lat": 30.1123,
+          "lon": -95.658,
+          "desc": "TOMBALL (08/26/2017)"
+        },
+        {
+          "event_id": "720860",
+          "event_date": "08/26/2017",
+          "location": "HOCKLEY",
+          "lat": 29.9887,
+          "lon": -95.8392,
+          "desc": "HOCKLEY (08/26/2017)"
+        },
+        {
+          "event_id": "720861",
+          "event_date": "08/26/2017",
+          "location": "JOYCE",
+          "lat": 29.5688,
+          "lon": -95.0139,
+          "desc": "JOYCE (08/26/2017)"
+        },
+        {
+          "event_id": "720867",
+          "event_date": "08/26/2017",
+          "location": "ACRE HOMES",
+          "lat": 29.8599,
+          "lon": -95.4273,
+          "desc": "ACRE HOMES (08/26/2017)"
+        },
+        {
+          "event_id": "720869",
+          "event_date": "08/26/2017",
+          "location": "HOCKLEY",
+          "lat": 30.0886,
+          "lon": -95.993,
+          "desc": "HOCKLEY (08/26/2017)"
+        },
+        {
+          "event_id": "720873",
+          "event_date": "08/26/2017",
+          "location": "CLINTON PARK",
+          "lat": 29.7216,
+          "lon": -95.2927,
+          "desc": "CLINTON PARK (08/26/2017)"
+        },
+        {
+          "event_id": "714586",
+          "event_date": "09/18/2017",
+          "location": "HOUSTON",
+          "lat": 29.7438,
+          "lon": -95.3546,
+          "desc": "HOUSTON (09/18/2017)"
+        },
+        {
+          "event_id": "757732",
+          "event_date": "07/03/2018",
+          "location": "TAYLOR LAKE VLG",
+          "lat": 29.5882,
+          "lon": -95.0944,
+          "desc": "TAYLOR LAKE VLG (07/03/2018)"
+        },
+        {
+          "event_id": "757973",
+          "event_date": "07/04/2018",
+          "location": "SPRING",
+          "lat": 30.1081,
+          "lon": -95.3535,
+          "desc": "SPRING (07/04/2018)"
+        },
+        {
+          "event_id": "797754",
+          "event_date": "12/07/2018",
+          "location": "ENGLEWOOD",
+          "lat": 29.7624,
+          "lon": -95.3428,
+          "desc": "ENGLEWOOD (12/07/2018)"
+        },
+        {
+          "event_id": "797758",
+          "event_date": "12/08/2018",
+          "location": "WEST PARK",
+          "lat": 29.6631,
+          "lon": -95.5649,
+          "desc": "WEST PARK (12/08/2018)"
+        },
+        {
+          "event_id": "853617",
+          "event_date": "08/23/2019",
+          "location": "WALLIS",
+          "lat": 29.5904,
+          "lon": -95.1057,
+          "desc": "WALLIS (08/23/2019)"
+        },
+        {
+          "event_id": "921900",
+          "event_date": "09/21/2020",
+          "location": "EAST HAVEN",
+          "lat": 29.6055,
+          "lon": -95.2776,
+          "desc": "EAST HAVEN (09/21/2020)"
+        },
+        {
+          "event_id": "922065",
+          "event_date": "09/21/2020",
+          "location": "MINNETEX",
+          "lat": 29.5958,
+          "lon": -95.3561,
+          "desc": "MINNETEX (09/21/2020)"
+        },
+        {
+          "event_id": "960082",
+          "event_date": "05/18/2021",
+          "location": "KINGWOOD",
+          "lat": 29.89,
+          "lon": -95.32,
+          "desc": "KINGWOOD (05/18/2021)"
+        },
+        {
+          "event_id": "960135",
+          "event_date": "05/24/2021",
+          "location": "HOUSTON",
+          "lat": 29.7037,
+          "lon": -95.3712,
+          "desc": "HOUSTON (05/24/2021)"
+        },
+        {
+          "event_id": "966346",
+          "event_date": "08/16/2021",
+          "location": "BUNKER HILL",
+          "lat": 29.75,
+          "lon": -95.53,
+          "desc": "BUNKER HILL (08/16/2021)"
+        },
+        {
+          "event_id": "1102311",
+          "event_date": "05/14/2023",
+          "location": "HOUSTON COLLIER ARPT",
+          "lat": 29.9046,
+          "lon": -95.4707,
+          "desc": "HOUSTON COLLIER ARPT (05/14/2023)"
+        }
+      ],
+      "m_noaa_points": [
+        {
+          "event_id": "579534",
+          "event_date": "05/30/2015",
+          "location": "SPRING",
+          "lat": 30.1143,
+          "lon": -95.4547,
+          "desc": "SPRING (05/30/2015)"
+        },
+        {
+          "event_id": "675235",
+          "event_date": "01/18/2017",
+          "location": "ALMEDA",
+          "lat": 29.5897,
+          "lon": -95.4473,
+          "desc": "ALMEDA (01/18/2017)"
+        },
+        {
+          "event_id": "675098",
+          "event_date": "01/20/2017",
+          "location": "ENGLEWOOD",
+          "lat": 29.7598,
+          "lon": -95.3668,
+          "desc": "ENGLEWOOD (01/20/2017)"
+        },
+        {
+          "event_id": "710731",
+          "event_date": "06/04/2017",
+          "location": "HERMOSSEY",
+          "lat": 29.7758,
+          "lon": -95.5879,
+          "desc": "HERMOSSEY (06/04/2017)"
+        },
+        {
+          "event_id": "710726",
+          "event_date": "06/24/2017",
+          "location": "LITTLE YORK",
+          "lat": 29.8919,
+          "lon": -95.3761,
+          "desc": "LITTLE YORK (06/24/2017)"
+        },
+        {
+          "event_id": "710727",
+          "event_date": "06/25/2017",
+          "location": "BELLAIRE JCT",
+          "lat": 29.7227,
+          "lon": -95.465,
+          "desc": "BELLAIRE JCT (06/25/2017)"
+        },
+        {
+          "event_id": "721084",
+          "event_date": "08/27/2017",
+          "location": "WHITE OAK ACRES",
+          "lat": 29.8067,
+          "lon": -95.4204,
+          "desc": "WHITE OAK ACRES (08/27/2017)"
+        },
+        {
+          "event_id": "721085",
+          "event_date": "08/27/2017",
+          "location": "TOMBALL",
+          "lat": 30.1431,
+          "lon": -95.7622,
+          "desc": "TOMBALL (08/27/2017)"
+        },
+        {
+          "event_id": "721091",
+          "event_date": "08/27/2017",
+          "location": "WESTFIELD",
+          "lat": 30.0375,
+          "lon": -95.4187,
+          "desc": "WESTFIELD (08/27/2017)"
+        },
+        {
+          "event_id": "721096",
+          "event_date": "08/28/2017",
+          "location": "PASADENA",
+          "lat": 29.6896,
+          "lon": -95.2072,
+          "desc": "PASADENA (08/28/2017)"
+        },
+        {
+          "event_id": "721101",
+          "event_date": "08/28/2017",
+          "location": "WESTFIELD",
+          "lat": 30.0367,
+          "lon": -95.4209,
+          "desc": "WESTFIELD (08/28/2017)"
+        },
+        {
+          "event_id": "721136",
+          "event_date": "08/29/2017",
+          "location": "WESTFIELD",
+          "lat": 30.0342,
+          "lon": -95.4334,
+          "desc": "WESTFIELD (08/29/2017)"
+        },
+        {
+          "event_id": "830461",
+          "event_date": "05/09/2019",
+          "location": "KATY",
+          "lat": 29.8976,
+          "lon": -95.8261,
+          "desc": "KATY (05/09/2019)"
+        },
+        {
+          "event_id": "830464",
+          "event_date": "05/09/2019",
+          "location": "TODD MISSION",
+          "lat": 29.9508,
+          "lon": -95.3076,
+          "desc": "TODD MISSION (05/09/2019)"
+        },
+        {
+          "event_id": "857803",
+          "event_date": "09/18/2019",
+          "location": "GOLDEN ACRES",
+          "lat": 29.6666,
+          "lon": -95.1575,
+          "desc": "GOLDEN ACRES (09/18/2019)"
+        },
+        {
+          "event_id": "858108",
+          "event_date": "09/19/2019",
+          "location": "HUMBLE",
+          "lat": 30.0579,
+          "lon": -95.1776,
+          "desc": "HUMBLE (09/19/2019)"
+        },
+        {
+          "event_id": "858116",
+          "event_date": "09/19/2019",
+          "location": "(IAH)HOUSTON INTL AR",
+          "lat": 29.963,
+          "lon": -95.3391,
+          "desc": "(IAH)HOUSTON INTL AR (09/19/2019)"
+        },
+        {
+          "event_id": "858117",
+          "event_date": "09/19/2019",
+          "location": "LAKE HOUSTON",
+          "lat": 29.9457,
+          "lon": -95.1066,
+          "desc": "LAKE HOUSTON (09/19/2019)"
+        },
+        {
+          "event_id": "869176",
+          "event_date": "09/19/2019",
+          "location": "KINGWOOD",
+          "lat": 29.9179,
+          "lon": -95.3182,
+          "desc": "KINGWOOD (09/19/2019)"
+        },
+        {
+          "event_id": "899524",
+          "event_date": "06/25/2020",
+          "location": "KATY",
+          "lat": 29.79,
+          "lon": -95.82,
+          "desc": "KATY (06/25/2020)"
+        },
+        {
+          "event_id": "963117",
+          "event_date": "06/21/2021",
+          "location": "SETTEGAST",
+          "lat": 29.82,
+          "lon": -95.34,
+          "desc": "SETTEGAST (06/21/2021)"
+        },
+        {
+          "event_id": "1004355",
+          "event_date": "01/09/2022",
+          "location": "HERMOSSEY",
+          "lat": 29.78,
+          "lon": -95.54,
+          "desc": "HERMOSSEY (01/09/2022)"
+        },
+        {
+          "event_id": "1004356",
+          "event_date": "01/09/2022",
+          "location": "SPRING BRANCH",
+          "lat": 29.8228,
+          "lon": -95.5298,
+          "desc": "SPRING BRANCH (01/09/2022)"
+        },
+        {
+          "event_id": "1004366",
+          "event_date": "01/09/2022",
+          "location": "SPRING BRANCH",
+          "lat": 29.8198,
+          "lon": -95.5015,
+          "desc": "SPRING BRANCH (01/09/2022)"
+        },
+        {
+          "event_id": "1004373",
+          "event_date": "01/09/2022",
+          "location": "LITTLE YORK",
+          "lat": 29.8892,
+          "lon": -95.3935,
+          "desc": "LITTLE YORK (01/09/2022)"
+        },
+        {
+          "event_id": "1004376",
+          "event_date": "01/09/2022",
+          "location": "WHITE OAK ACRES",
+          "lat": 29.83,
+          "lon": -95.45,
+          "desc": "WHITE OAK ACRES (01/09/2022)"
+        }
+      ]
+    }
+  }
+}

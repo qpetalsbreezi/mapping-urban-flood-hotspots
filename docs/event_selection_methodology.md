@@ -1,18 +1,18 @@
 # Flood Event Selection Methodology
 
 ## Overview
-This document describes the process used to select flood events for flood hotspot analysis in two cities: **Raleigh, North Carolina** and **Houston, Texas**.
+This document describes the process used to select flood events for flood hotspot analysis in two cities: **Raleigh, North Carolina** and **Houston, Texas**. The **study period is 2015–2025**, aligned with Sentinel‑1 availability (operational from late 2014).
 
 ## Data Sources
 
 ### Raleigh, North Carolina
-- **NOAA Storm Event Database**: 199 flood events in Wake County (2010-2025)
-- **NOAA Raleigh-Specific Events**: 41 events mentioning Raleigh
-- **USGS Station 02087324**: Daily water level data for Crabtree Creek at US 1, Raleigh
+- **NOAA Storm Event Database**: Wake County flood events, **2015–2025** (city-filtered Raleigh subset: 49 events with coordinates)
+- **NOAA Raleigh-Specific Events**: Events mentioning Raleigh in the filtered CSV
+- **USGS Station 02087324**: Daily water level data for Crabtree Creek at US 1, Raleigh (**2015–2025** analysis window)
 
 ### Houston, Texas
-- **NOAA Storm Event Database**: 131 flood events in Harris County (2010-2025)
-- **USGS Station 08073700**: Daily water level data for Buffalo Bayou at Piney Point, TX
+- **NOAA Storm Event Database**: Harris County flood events, **2015–2025** (city-filtered Houston subset: 55 events with coordinates)
+- **USGS Station 08073700**: Daily water level data for Buffalo Bayou at Piney Point, TX (**2015–2025** analysis window)
 
 ## Selection Criteria
 
@@ -21,8 +21,8 @@ This document describes the process used to select flood events for flood hotspo
 - **Houston**: Collected all Harris County flood events from NOAA database
 
 ### Step 2: USGS Water Level Analysis
-- **Raleigh**: Analyzed 15 years of daily gage height data (2010-2025), identified events >10 feet
-- **Houston**: Analyzed 15 years of daily gage height data (2010-2025), identified events >40 feet
+- **Raleigh**: Analyzed daily gage height data (**2015–2025**), identified events >10 feet
+- **Houston**: Analyzed daily gage height data (**2015–2025**), identified events >40 feet
 
 ### Step 3: Cross-Reference Validation
 Events were selected only if they met ALL of the following criteria:

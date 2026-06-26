@@ -24,7 +24,7 @@ ALGORITHM STEPS
 
 STEP 1: Event Selection and Validation
 
-Flood events are extracted from the NOAA Storm Events Database. For Raleigh, events are from Wake County (2010-2025). For Houston, events are from Harris County (2010-2025). NOAA data includes event dates, locations, and documented impacts.
+Flood events are extracted from the NOAA Storm Events Database for **2015–2025** (Sentinel-1 era). For Raleigh, events are from the city-filtered NOAA subset. For Houston, events are from the city-filtered Harris County subset. NOAA data includes event dates, locations, and documented impacts. Events before 2015 are excluded because Sentinel-1 was not operational.
 
 Events are cross-referenced with USGS stream gage data. For Raleigh, the Crabtree Creek gage (Station 02087324) must show water levels exceeding 10 feet. For Houston, the Buffalo Bayou gage (Station 08073700) must show water levels exceeding 40 feet.
 

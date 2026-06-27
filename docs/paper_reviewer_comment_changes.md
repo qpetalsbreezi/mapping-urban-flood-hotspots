@@ -5,8 +5,8 @@ Point-by-point responses for manuscript revision. Use the **progress table** bel
 ### Instructions for paper-integration agent
 
 1. **In paper (#6, #13, #15)** — Already applied to the manuscript. Do not re-insert; use those sections only as reference.
-2. **Needs paper** — Copy **Manuscript / rebuttal text** from each comment section marked **Needs paper** in the progress table (and **Appendix B** for Results).
-3. **Not done (#4, #14, #16, #17)** — Placeholders only until expanded in this doc.
+2. **Needs paper** — Copy **Manuscript / rebuttal text** from each comment section marked **Needs paper** in the progress table (**Appendix B** for Results; **Appendix E** / Comment **#14** for Table SX).
+3. **Not done (#4, #16, #17)** — Placeholders only until expanded in this doc.
 4. **Do not** restore old headline metrics (88.9% accuracy, circular validation design).
 
 ### Progress legend
@@ -37,13 +37,13 @@ Point-by-point responses for manuscript revision. Use the **progress table** bel
 | **11** | Control event poorly documented | **Addressed** | **Needs paper** |
 | **12** | Temporal aggregation bias | **Addressed** — analysis below | **Needs paper** |
 | **13** | No flood depth / severity | **Addressed** | **In paper** |
-| **14** | No random / simple baselines | Not done | Not done |
+| **14** | No random / simple baselines | **Addressed** — random-point baseline | **Needs paper** |
 | **15** | Title and terminology | **Addressed** | **In paper** |
 | **16** | Citation accuracy | Not done | Not done |
 | **17** | Limited statistics | Not done | Not done |
 | **18** | Study period; event table | **Addressed** | **Needs paper** |
 
-**Summary:** **3 in paper** (#6, #13, #15) · **11 need paper** (#1–#3, #5, #7–#12, #18) · **4 not done** (#4, #14, #16, #17)
+**Summary:** **3 in paper** (#6, #13, #15) · **12 need paper** (#1–#3, #5, #7–#12, #14, #18) · **3 not done** (#4, #16, #17)
 
 ---
 
@@ -126,11 +126,19 @@ We report **buffered detection recall** on **known flood report points only**:
 
 - **Not** overall classification accuracy; no true negatives; **50% coin-flip logic does not apply**.
 - Old ~55% was from the **circular** design; revised independent 500 m recall is **89% (Raleigh)** and **61% (Houston)**.
-- A spatial null (random points in AOI) depends on flooded area and buffer width — generally **not** 50% (see **#14**).
+- A spatial null (random points in AOI) depends on flooded area and buffer width — Raleigh 6–63%, Houston 13–70% at 100–1000 m (**#14**), not 50%. At 500 m, Houston NOAA recall (**61%**) exceeds random (**41%**).
+
+### Random baseline cross-check (see **#14** for full table)
+
+| Buffer | Raleigh NOAA vs random | Houston NOAA vs random |
+|--------|------------------------|------------------------|
+| 100 m | 36% vs 6% | 11% vs 13% (comparable) |
+| 500 m | 89% vs 33% | 61% vs 41% |
+| 1000 m | 100% vs 63% | 89% vs 70% |
 
 ### Manuscript / rebuttal text (template)
 
-> We report buffered detection recall at 100–1000 m for independent NOAA locations (N−M events). This is not overall classification accuracy; the denominator contains only documented flood locations, so comparison to a 50% coin flip is not applicable. Recall increases with buffer distance as expected for a distance-tolerance metric. We replaced the prior single 1 km “accuracy” figure with this multi-buffer recall table.
+> We report buffered detection recall at 100–1000 m for independent NOAA locations (N−M events). This is not overall classification accuracy; the denominator contains only documented flood locations, so comparison to a 50% coin flip is not applicable. Recall increases with buffer distance as expected for a distance-tolerance metric. We replaced the prior single 1 km “accuracy” figure with this multi-buffer recall table. A random-point spatial null (500 points per city, seed 42) yielded hit rates of 6–63% (Raleigh) and 13–70% (Houston) at the same buffers — well below NOAA recall at most distances (**#14**), confirming that mid- and coarse-buffer performance is not explained by chance placement in the AOI.
 
 ---
 
@@ -375,15 +383,71 @@ Gaps (e.g., Raleigh 2019–2021, 2023) mean **zero** frequency contribution in t
 
 **Reviewer concern:** No stream-proximity, random-point, or FEMA overlay baselines.
 
-**Status:** Not done · **Future — expand this section when analysis is ready**
+**Status:** **Addressed** (repo) · **Needs paper**
 
-### Notes
+**Minimal scope:** Random-point baseline only (no stream-buffer or FEMA overlap in this revision; see **#4** for FEMA).
 
-- Proper null for our recall metric: random points in AOI → hit rate ≈ (buffered flood area) / (AOI area), **not 50%** (see **#3**).
+### What we did
 
-### Planned response (when addressed)
+- Added **random-point spatial null** to `generate_flood_hotspots.js` (and upload bundle).
+- **Sampling:** 500 points uniformly within each city AOI (`ee.FeatureCollection.randomPoints`, `seed=42`).
+- **Scoring:** Same buffered hit-rate metric as N−M validation — pre-urban **ever-flooded map**, buffers 100 / 250 / 500 / 1000 m.
+- **Implementation:** Flood mask dilated by buffer (`focal_max`, meters), then `sampleRegions` at each point (equivalent to per-point buffer + max, but stable for 500 points in GEE).
+- **GEE run:** `selectedCity` = `raleigh` or `houston`; load `independent_validation_locations.js`; console block `BASELINE — random points in AOI`.
 
-> Report random-point and stream-buffer baselines in supplement; compare to SAR recall at each buffer distance.
+### GEE console output (2025 runs)
+
+**Raleigh** (`seed=42`, n=500):
+
+```
+100 m buffered recall:  28/500 = 6%
+250 m buffered recall:  78/500 = 16%
+500 m buffered recall:  165/500 = 33%
+1000 m buffered recall: 315/500 = 63%
+```
+
+**Houston** (`seed=42`, n=500):
+
+```
+100 m buffered recall:  64/500 = 13%
+250 m buffered recall:  112/500 = 22%
+500 m buffered recall:  203/500 = 41%
+1000 m buffered recall: 352/500 = 70%
+```
+
+### Results table (NOAA vs random)
+
+| Buffer | Raleigh random (500 pts) | Raleigh N−M NOAA | Houston random (500 pts) | Houston N−M NOAA |
+|--------|--------------------------|------------------|--------------------------|------------------|
+| 100 m | 28/500 = **6%** | 13/36 = **36%** | 64/500 = **13%** | 3/28 = **11%** |
+| 250 m | 78/500 = **16%** | 22/36 = **61%** | 112/500 = **22%** | 10/28 = **36%** |
+| 500 m | 165/500 = **33%** | 32/36 = **89%** | 203/500 = **41%** | 17/28 = **61%** |
+| 1000 m | 315/500 = **63%** | 36/36 = **100%** | 352/500 = **70%** | 25/28 = **89%** |
+
+**Readout:**
+
+- **Raleigh:** NOAA recall exceeds random at every buffer (e.g. **36% vs 6%** at 100 m; **89% vs 33%** at 500 m).
+- **Houston:** At 100 m, NOAA recall (**11%**) is comparable to random (**13%**) — consistent with fine-buffer limits in **#3** (large AOI, dispersed reports). At wider buffers NOAA clearly exceeds random: **36% vs 22%** (250 m), **61% vs 41%** (500 m), **89% vs 70%** (1000 m). The old coin-flip argument is still invalid: 500 m recall is **61%**, not ~50%, and the spatial null at 500 m is **41%**, not 50%.
+
+### Supplement table (Table SX — for manuscript)
+
+| Buffer (m) | Raleigh NOAA (n=36) | Raleigh random (n=500) | Houston NOAA (n=28) | Houston random (n=500) |
+|------------|---------------------|------------------------|---------------------|------------------------|
+| 100 | 36% (13/36) | 6% (28/500) | 11% (3/28) | 13% (64/500) |
+| 250 | 61% (22/36) | 16% (78/500) | 36% (10/28) | 22% (112/500) |
+| 500 | 89% (32/36) | 33% (165/500) | 61% (17/28) | 41% (203/500) |
+| 1000 | 100% (36/36) | 63% (315/500) | 89% (25/28) | 70% (352/500) |
+
+*NOAA: N−M events only (independent test). Random: uniform AOI sample, seed 42, same ever-flooded map and metric.*
+
+### Manuscript / rebuttal text
+
+> To quantify performance relative to spatial chance, we compared independent NOAA recall to a **random-point baseline**: 500 locations drawn uniformly within each city AOI (seed 42), scored with the same buffered hit-rate metric on the pre-urban ever-flooded map. Random hit rates were well below NOAA recall at most buffers in both cities (Table SX). In Raleigh, random rates were 6%, 16%, 33%, and 63% at 100–1000 m, versus NOAA recall of 36%, 61%, 89%, and 100%. In Houston, random rates were 13%, 22%, 41%, and 70%, versus NOAA recall of 11%, 36%, 61%, and 89%; fine-buffer recall was comparable to random in Houston (11% vs 13% at 100 m), but exceeded the null at 250 m and wider (e.g. 61% vs 41% at 500 m). These baselines show that mid- and coarse-buffer recall is not explained by chance placement in the AOI. We did not use stream-buffer or FEMA overlays as headline baselines in this revision.
+
+### What we did not do (out of minimal scope)
+
+- Stream-proximity baseline (NHD buffers).
+- FEMA NFHL overlap (**#4**).
 
 ---
 
@@ -481,7 +545,22 @@ GEE composite IDs are authoritative for map roles (`generate_flood_hotspots_gee_
 
 ## Appendix B — Draft Results paragraph
 
-> Independent validation used NOAA-reported flood locations from events without Sentinel-1 coverage (N−M), which did not contribute to the ever-flooded map built from SAR events (M). Buffered detection recall increased with tolerance distance as expected. For Raleigh (n = 36), recall was 36% at 100 m, 61% at 250 m, 89% at 500 m, and 100% at 1000 m. For Houston (n = 28), recall was 11% at 100 m, 36% at 250 m, 61% at 500 m, and 89% at 1000 m. Houston's lower recall at fine buffers likely reflects the larger metropolitan AOI and greater spatial spread of report locations relative to bayou-aligned flood detections. Detection thresholds (−1.8 dB VV+VH, −2.0 dB VV-only) were locked per city using a training subset of M events before map construction. All events are documented in a supplementary event catalog for 2015–2025 (Table S1).
+> Independent validation used NOAA-reported flood locations from events without Sentinel-1 coverage (N−M), which did not contribute to the ever-flooded map built from SAR events (M). Buffered detection recall increased with tolerance distance as expected. For Raleigh (n = 36), recall was 36% at 100 m, 61% at 250 m, 89% at 500 m, and 100% at 1000 m. For Houston (n = 28), recall was 11% at 100 m, 36% at 250 m, 61% at 500 m, and 89% at 1000 m. Houston's lower recall at fine buffers likely reflects the larger metropolitan AOI and greater spatial spread of report locations relative to bayou-aligned flood detections. A random-point spatial null (500 locations per city, seed 42) yielded substantially lower hit rates at most buffers (Table SX; **#14**). Detection thresholds (−1.8 dB VV+VH, −2.0 dB VV-only) were locked per city using a training subset of M events before map construction. All events are documented in a supplementary event catalog for 2015–2025 (Table S1).
+
+---
+
+## Appendix E — Random-point baseline (Table SX)
+
+See **Comment #14** for method, GEE output, and rebuttal text. Use this table in the supplement:
+
+| Buffer (m) | Raleigh NOAA | Raleigh random | Houston NOAA | Houston random |
+|------------|--------------|----------------|--------------|----------------|
+| 100 | 36% (13/36) | 6% (28/500) | 11% (3/28) | 13% (64/500) |
+| 250 | 61% (22/36) | 16% (78/500) | 36% (10/28) | 22% (112/500) |
+| 500 | 89% (32/36) | 33% (165/500) | 61% (17/28) | 41% (203/500) |
+| 1000 | 100% (36/36) | 63% (315/500) | 89% (25/28) | 70% (352/500) |
+
+**Parameters:** pre-urban ever-flooded map; random points uniform in city AOI; `seed=42`; scoring via dilated flood mask + point sample (GEE `focal_max` + `sampleRegions`).
 
 ---
 
@@ -492,7 +571,7 @@ GEE composite IDs are authoritative for map roles (`generate_flood_hotspots_gee_
 - USGS gage not used to filter events (**#8**); single station may not reflect local report locations.
 - 100 m recall limited, especially Houston (**#3**).
 - Recall only — no precision/IoU (**#10**).
-- No random/FEMA baselines yet (**#14**).
+- Random-point baseline complete (**#14**): Raleigh and Houston vs N−M NOAA in comment section.
 - S1 window and temporal sampling (**#9**, **#12** — **#12** draft in comment section).
 - Houston non-flood control documented (**#7**, **#11** — draft in comment sections); single control, no FP rate.
 - SAR detects flood **presence, not depth or velocity** (**#13** — **in paper**).
@@ -507,7 +586,9 @@ python3 code/validation/build_independent_validation.py
 python3 code/validation/build_event_catalog.py
 ```
 
-GEE: paste `code/gee_mapping/generate_flood_hotspots_gee_upload.js`; set `selectedCity` to `raleigh` or `houston`.
+GEE: paste `code/gee_mapping/generate_flood_hotspots_gee_upload.js`; set `selectedCity` to `raleigh` or `houston`. Console outputs: **HEADLINE** (N−M NOAA recall), **BASELINE** (random null, **#14**).
+
+**Random baseline (#14):** 500 points, seed 42, same buffers as validation. Refactored scoring uses dilated ever-flooded map + `sampleRegions` (see Comment #14).
 
 Config: [`validation_split.json`](../data/processed/validation_split.json)
 

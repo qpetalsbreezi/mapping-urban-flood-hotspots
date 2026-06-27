@@ -72,7 +72,19 @@ Outputs:
 4. Confirm `useAdaptiveThreshold = false`.
 5. Run and read console:
    - **HEADLINE — independent N−M NOAA test** → manuscript number
+   - **BASELINE — random points in AOI** → spatial null for reviewer **#14** (500 pts, seed 42)
    - **DIAGNOSTIC — M-event NOAA points** → circular, do not use as headline
+
+## Random-point baseline results (#14)
+
+| Buffer | Raleigh random | Raleigh N−M | Houston random | Houston N−M |
+|--------|----------------|-------------|----------------|-------------|
+| 100 m | 6% (28/500) | 36% (13/36) | 13% (64/500) | 11% (3/28) |
+| 250 m | 16% (78/500) | 61% (22/36) | 22% (112/500) | 36% (10/28) |
+| 500 m | 33% (165/500) | 89% (32/36) | 41% (203/500) | 61% (17/28) |
+| 1000 m | 63% (315/500) | 100% (36/36) | 70% (352/500) | 89% (25/28) |
+
+Scoring: pre-urban ever-flooded map; flood mask dilated by buffer width; point sample at random locations (same metric as NOAA recall).
 
 ## Manuscript language (template)
 

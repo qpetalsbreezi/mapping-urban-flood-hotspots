@@ -1107,17 +1107,20 @@ var aggregateValidationMask = everFloodedMap;
 
 function bufferedRecallOnMap(mapImage, pointsFC, bufferM) {
   var pointsInAOI = pointsFC.filterBounds(focusAOI);
-  var withHits = pointsInAOI.map(function(pt) {
-    var maxVal = mapImage.reduceRegion({
-      geometry: pt.geometry().buffer(bufferM),
-      reducer: ee.Reducer.max(),
-      scale: 100,
-      bestEffort: true
-    }).get('flood');
-    return pt.set('hit', ee.Number(maxVal).gte(1).toInt());
+  // Dilate flood mask by bufferM so point samples == "flood within B meters"
+  var dilated = mapImage.unmask(0).focal_max({radius: bufferM, units: 'meters'});
+  var sampled = dilated.sampleRegions({
+    collection: pointsInAOI,
+    properties: [],
+    scale: 100,
+    tileScale: 4,
+    geometries: false
+  });
+  var withHits = sampled.map(function(f) {
+    return f.set('hit', ee.Number(f.get('flood')).gte(1).toInt());
   });
   var total = withHits.size();
-  var hits = withHits.select(['hit']).reduceColumns(ee.Reducer.sum(), ['hit']).get('sum');
+  var hits = withHits.aggregate_sum('hit');
   return ee.Dictionary({total: total, hits: hits});
 }
 
@@ -1137,6 +1140,11 @@ function recallDictForBuffers(mapImage, pointsFC, buffersM) {
 
 function printRecallFromDict(s, buffersM, title) {
   print(title);
+  if (!s) {
+    print('  ERROR: evaluation failed — check Tasks tab for details.');
+    print('');
+    return;
+  }
   var any = false;
   for (var i = 0; i < buffersM.length; i++) {
     var b = buffersM[i];
@@ -1172,15 +1180,47 @@ if (independentLocs.length === 0) {
     });
   }));
   var indepRecall = recallDictForBuffers(everFloodedMap, independentFC, VALIDATION_BUFFERS_M);
-  indepRecall.set('nPoints', independentFC.size()).evaluate(function(s) {
-    var n = s.nPoints || 0;
+  indepRecall.set('nPoints', independentFC.size()).evaluate(
+    function(s) {
+      var n = (s && s.nPoints) || 0;
+      printRecallFromDict(
+        s,
+        VALIDATION_BUFFERS_M,
+        'HEADLINE — independent N-M NOAA test (' + n + ' points, no SAR):'
+      );
+    },
+    function(err) {
+      print('HEADLINE — independent N-M NOAA test: evaluation failed');
+      print('  ' + err);
+      print('');
+    }
+  );
+}
+
+// Random-point spatial null (#14): same buffered hit rate on random AOI locations
+var RANDOM_BASELINE_N = 500;
+var RANDOM_BASELINE_SEED = 42;
+var randomBaselineFC = ee.FeatureCollection.randomPoints({
+  region: focusAOI,
+  points: RANDOM_BASELINE_N,
+  seed: RANDOM_BASELINE_SEED
+});
+var randomRecall = recallDictForBuffers(everFloodedMap, randomBaselineFC, VALIDATION_BUFFERS_M);
+randomRecall.evaluate(
+  function(s) {
     printRecallFromDict(
       s,
       VALIDATION_BUFFERS_M,
-      'HEADLINE — independent N-M NOAA test (' + n + ' points, no SAR):'
+      'BASELINE — random points in AOI (n=' + RANDOM_BASELINE_N + ', seed=' +
+        RANDOM_BASELINE_SEED + ', reviewer #14):'
     );
-  });
-}
+  },
+  function(err) {
+    print('BASELINE — random points in AOI: evaluation failed');
+    print('  ' + err);
+    print('');
+  }
+);
 
 // Diagnostic: M-event NOAA points (used in map) — not independent, do not use as headline
 var mEventPoints = ee.FeatureCollection([]);
@@ -1194,11 +1234,18 @@ for (var m = 0; m < preUrbanMaskList.length; m++) {
 }
 mEventPoints = mEventPoints.filterBounds(focusAOI);
 var mRecall = recallDictForBuffers(everFloodedMap, mEventPoints, VALIDATION_BUFFERS_M);
-mRecall.evaluate(function(s) {
-  if ((s['total_500'] || 0) > 0) {
-    printRecallFromDict(s, VALIDATION_BUFFERS_M, 'DIAGNOSTIC — M-event NOAA points (circular, not headline):');
+mRecall.evaluate(
+  function(s) {
+    if (s && (s['total_500'] || 0) > 0) {
+      printRecallFromDict(s, VALIDATION_BUFFERS_M, 'DIAGNOSTIC — M-event NOAA points (circular, not headline):');
+    }
+  },
+  function(err) {
+    print('DIAGNOSTIC — M-event NOAA points: evaluation failed');
+    print('  ' + err);
+    print('');
   }
-});
+);
 
 // Aggregate masks by summing (each mask is 1 for flood, 0 for no flood)
 // Result: frequency map showing how many events detected flooding at each pixel

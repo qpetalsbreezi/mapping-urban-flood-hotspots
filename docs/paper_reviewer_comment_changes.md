@@ -1,286 +1,408 @@
 # Paper Changes for Reviewer Comments
 
-Summary of revised methodology, validation results, and documentation updates addressing reviewer feedback. Use this when drafting the manuscript.
-
-## Reviewer comment status (summary)
-
-| # | Topic | Status |
-|---|--------|--------|
-| **1** | Circular validation | **Partial** — N−M independent test; NOAA still reference |
-| **2** | Threshold overfitting | **Addressed** — train subset of M, locked thresholds |
-| **3** | 1 km buffer too coarse | **Addressed** — 100, 250, 500, 1000 m buffers |
-| **4** | No FEMA baseline | Not done |
-| **5** | SAR urban limits | Not done |
-| **6** | Unsupported local knowledge | Not done |
-| **7** / **11** | Control event | Not done |
-| **8** | Gauge thresholds | **Addressed** — not used as filter; catalog metadata only |
-| **9** | Image windows | In event catalog (S1 lags) |
-| **10** | Precision / IoU | **Partial** — recall only |
-| **12**–**17** | Various | Not done |
-| **15** | Title / terminology | Not done |
-| **18** | Timeline + event table | **Addressed** — 2015–2025 + reproducible catalogs (below) |
+Point-by-point responses for manuscript revision. Use the **status table** for a quick overview, then jump to each **Comment #** section for detail and draft rebuttal text.
 
 ---
 
-## What We Did
+## Status at a glance
 
-### Goal
-
-Map recurring urban flood hotspots in **Raleigh, NC** and **Houston, TX** using **Sentinel-1 SAR** combined with **NOAA** flood reports, then validate the map in a way that addresses reviewer concerns about circular evaluation and overfitted thresholds. **USGS gage data** is recorded per event in the supplementary catalog but is **not** used to include or exclude events.
-
-### Study period
-
-**2015–2025** for all screening, mapping, and validation — aligned with Sentinel-1 availability (operational from late 2014). Events before 2015 are excluded because no SAR imagery existed. This replaces the original manuscript’s ambiguous **2010–2025** wording (reviewer **#18**).
-
-### Cities
-
-**Raleigh and Houston were processed independently.** Thresholds, maps, and validation were not shared across cities.
-
----
-
-### Data and event framework
-
-For each city we worked with three groups of NOAA flood events:
-
-| Group | Meaning | Role |
-|-------|---------|------|
-| **N** | All NOAA flood events with coordinates (2015–2025) | Screening universe |
-| **M** | Events with usable Sentinel-1 before/after image pairs | **Build the flood map** |
-| **N − M** | NOAA floods **without** SAR coverage | **Independent validation** |
-
-**M events** were used to:
-
-1. Tune and lock flood-detection thresholds (on a **training subset** only)
-2. Detect flooding per event from SAR backscatter change
-3. Aggregate detections into an **ever-flooded map** (pixel = flooded in ≥1 event)
-
-**N − M events** were **never** used to build the map. Their NOAA report locations serve as an independent reference: do other documented floods fall where SAR saw flooding in other years?
+| # | Reviewer concern | Status |
+|---|------------------|--------|
+| **1** | Circular validation (NOAA used for selection and testing) | **Partial** |
+| **2** | Threshold overfitting (dB tuned on same data evaluated) | **Addressed** |
+| **3** | 1 km buffer too coarse; ~55% misread as “coin flip” | **Addressed** |
+| **4** | No FEMA / baseline comparison | Not done |
+| **5** | Urban SAR limits understated | Not done |
+| **6** | Unsupported “local knowledge” claims | Not done |
+| **7** | Weak control event (one non-flood case) | Not done |
+| **8** | Arbitrary USGS gauge thresholds (10 ft / 40 ft) | **Addressed** |
+| **9** | Image window bias (30-day pre / 2-day post) | **Partial** |
+| **10** | Missing precision, recall terminology, IoU | **Partial** |
+| **11** | Control event poorly documented | Not done |
+| **12** | Temporal aggregation bias (uneven S1 coverage) | Not done |
+| **13** | No flood depth / severity | Not done |
+| **14** | No random / simple baselines | Not done |
+| **15** | Title and terminology misleading | Not done |
+| **16** | Citation accuracy | Not done |
+| **17** | Limited statistics (no CIs, per-event breakdown) | Not done |
+| **18** | 2010–2025 vs Sentinel-1; need full event table | **Addressed** |
 
 ---
 
-### Flood detection method
+## Comment #1 — Circular validation
 
-- **Sensor:** Copernicus Sentinel-1 GRD (VV and VH when available)
-- **Approach:** Compare pre- and post-storm images; flood = backscatter decrease below a fixed dB threshold
-- **Locked thresholds** (after training, same for all events in a city):
-  - **−1.8 dB** when both VV and VH are available
-  - **−2.0 dB** when only VV is available
-- **Adaptive per-scene thresholds:** turned **off** for evaluation (to avoid leaking information from the test event)
-- **Masks:** Permanent water excluded; speckle filtering applied; urban mask used for hotspot display; validation used a **pre-urban** ever-flooded layer (generous)
+**Reviewer concern:** NOAA data used for both event selection and accuracy testing; headline **88.9%** likely overoptimistic.
 
-**Threshold training (per city, subset of M only):**
+**Status:** **Partial**
 
-| City | Train composites (GEE event IDs) |
-|------|----------------------------------|
-| Raleigh | `755610`, `775029_and_1_more` |
-| Houston | `579534`, `675235_and_1_more`, `710731`, `830461_and_1_more` |
+### What we did
 
-Thresholds were locked **before** building the full map and **before** independent validation.
+- **Map (M):** ever-flooded union built only from events with Sentinel-1 pairs.
+- **Test (N−M):** NOAA locations from events **without** SAR — never used to build the map.
+- **Cities independent:** Raleigh thresholds not tuned on Houston data (and vice versa).
 
----
+See [`validation_independence.md`](validation_independence.md).
 
-### Maps produced
+### What remains
 
-1. **Ever-flooded map** — union of all flood detections across M events (used for validation)
-2. **Hotspot frequency map** — counts how many M events flooded each pixel (e.g., 1×, 2–3×, 4+×)
-
-**SAR events in map:**
-
-| City | SAR composites in map |
-|------|------------------------|
-| Raleigh | 5 |
-| Houston | 10 (+ 1 non-flood control excluded from mapping) |
-
-**Hotspot statistics (from GEE runs):**
-
-| City | Max frequency at one pixel |
-|------|----------------------------|
-| Raleigh | 3 |
-| Houston | 6 |
-
----
-
-### Validation design (revision from original paper)
-
-**Original approach (replaced):**
-
-- Tune thresholds using NOAA locations on the same events
-- Build one aggregate map from all events
-- Score NOAA points against that map → **88.9% at 1 km** (circular, overoptimistic)
-
-**New approach:**
-
-- **Map:** built from **M** SAR events only
-- **Test:** **N − M** NOAA locations (independent — not in the map)
-- **Metric:** **buffered detection recall** — fraction of independent NOAA points with ≥1 detected flood pixel within a distance buffer
-- **Buffers reported:** **100 m, 250 m, 500 m, 1000 m**
-
-See also: [`validation_independence.md`](validation_independence.md)
-
----
-
-## Response — “~50% is a coin flip” (metric clarification)
-
-The reviewer appears to treat our reported percentages as **overall classification accuracy** on a balanced yes/no task (where uninformed guessing ≈ 50%). **That is not our metric.**
-
-### What we actually report
-
-**Buffered detection recall** (point-based, one-sided):
-
-> recall at buffer B = (number of NOAA flood points with ≥1 SAR flood pixel within B) / (number of NOAA flood points evaluated)
-
-- **Reference:** only **known flood report locations** (independent N−M events).
-- **Prediction:** ever-flooded SAR map (union of M events).
-- **Hit:** any flood pixel within **B** meters of the report point.
-- **Not included:** true negatives, false alarms, pixel-wise accuracy, or IoU.
-
-We do **not** classify random locations as flood vs non-flood, so there is no symmetric 50/50 “coin flip” null.
-
-### Why random chance is not 50%
-
-| Misconception | Reality |
-|---------------|---------|
-| “55% ≈ 50% → no skill” | 55% was the **old circular** 500 m result. Revised **independent** recall at 500 m is **89% (Raleigh)** and **61% (Houston)** — different design and definition. |
-| Random = 50% for any percentage metric | 50% applies to **balanced binary accuracy** (TP+TN)/N. Our metric is **recall on positive reference points only**. |
-| A fair spatial null | Place **n random points** in the AOI; expected hit rate ≈ **(area of flood map buffered by B) / (AOI area)** — typically **not** 50% (often much lower at 100 m for sparse flood extent). |
-
-Example intuition: if ever-flooded flood covers ~2% of the urban AOI, a random point has ~2% chance to land on flood (before buffering). With a 500 m buffer around each random point, the null rate rises with flood-patch size and buffer width — still a **spatial** quantity, not 50%.
+- NOAA still defines the **event universe** and the **spatial reference** (not FEMA, aerial imagery, or road closures).
+- Threshold tuning on M train events still uses NOAA point locations.
 
 ### Manuscript / rebuttal text (template)
 
-> We clarify that validation reports **buffered detection recall**, not overall classification accuracy. For each independent NOAA flood report location (events without Sentinel-1 coverage), we test whether the ever-flooded SAR map contains ≥1 detected flood pixel within 100–1000 m. The denominator is **only documented flood locations**; there is no symmetric negative class, so comparison to a 50% “coin flip” is not applicable. Declining recall at tighter buffers (e.g., 11% at 100 m for Houston vs 89% at 1000 m) reflects **positional tolerance**, not collapse to chance performance. A proper null model is spatial (e.g., random points in the AOI or stream-proximity baseline; reviewer comment #14), whose expected hit rate depends on flood extent and buffer size and is generally **not** 50%. We report recall explicitly following common practice for **point-referenced** flood map evaluation.
-
-### Relation to reviewer comments
-
-| # | Link |
-|---|------|
-| **#3** | Finer buffers show recall **varies with B** — expected for a distance-based metric, not proof of ~50% skill |
-| **#10** | We report **recall**; precision/FAR would need a full reference map (future work) |
-| **#14** | Random/stream/FEMA baselines can be added; their expected values ≠ 50% for this recall definition |
+> We revised validation to reduce circularity. The ever-flooded map aggregates SAR detections from M events (Sentinel-1 coverage only). Independent test locations come from N−M events that did not contribute to the map. We no longer report the prior 88.9% aggregate figure, which mixed map-building and test events. NOAA remains the point reference for both screening and validation; fully independent ground truth (e.g., aerial imagery) is noted as future work.
 
 ---
 
-## Comment #8 — USGS gauge thresholds (not an inclusion filter)
+## Comment #2 — Threshold overfitting
 
-### Manuscript text (template)
+**Reviewer concern:** dB thresholds tuned on the same events used for evaluation.
 
-> The event universe consists of NOAA-reported urban flood events with coordinates during **2015–2025**. USGS daily gage height at Crabtree Creek (Raleigh, station 02087324) and Buffalo Bayou (Houston, station 08073700) was recorded for each event date and reported in the supplementary event catalog. **Gage exceedance was not used as an inclusion criterion.** Requiring arbitrary gage cutoffs (e.g., 10 ft / 40 ft from early manual screening) would exclude documented local floods where report locations may not align with downstream gage timing or magnitude. Sentinel-1 availability determines which events contribute to the ever-flooded map (M) versus independent validation (N−M).
+**Status:** **Addressed**
 
-### What changed from the original manuscript
+### What we did
+
+- Locked thresholds: **−1.8 dB** (VV+VH), **−2.0 dB** (VV-only).
+- Tuned on a **train subset of M only** per city; then fixed before full map and before N−M validation.
+- **`useAdaptiveThreshold = false`** in GEE (adaptive mode leaks scene information).
+
+| City | Threshold-train composites (GEE IDs) |
+|------|----------------------------------------|
+| Raleigh | `755610`, `775029_and_1_more` |
+| Houston | `579534`, `675235_and_1_more`, `710731`, `830461_and_1_more` |
+
+Config: [`data/processed/validation_split.json`](../data/processed/validation_split.json)
+
+### Manuscript / rebuttal text (template)
+
+> Detection thresholds were selected using a training subset of M events per city, then locked before constructing the ever-flooded map and before independent validation. Adaptive per-scene thresholds were disabled for evaluation. Raleigh and Houston thresholds were tuned independently.
+
+---
+
+## Comment #3 — Buffer distance and “~50% = coin flip”
+
+**Reviewer concern:** 1 km buffer too coarse; 500 m recall (~55.6% in old run) interpreted as near-random / coin-flip performance.
+
+**Status:** **Addressed**
+
+### What we did
+
+- Report **buffered detection recall** at **100 m, 250 m, 500 m, 1000 m** (not only 1 km).
+- Rename metric explicitly — **not** “accuracy.”
+- Independent N−M validation (see **#1**, **#2**).
+
+**Headline results (N−M, ever-flooded map):**
+
+| Buffer | Raleigh (n = 36) | Houston (n = 28) |
+|--------|------------------|------------------|
+| 100 m | 13/36 = **36%** | 3/28 = **11%** |
+| 250 m | 22/36 = **61%** | 10/28 = **36%** |
+| 500 m | 32/36 = **89%** | 17/28 = **61%** |
+| 1000 m | 36/36 = **100%** | 25/28 = **89%** |
+
+### Metric clarification (rebuttal to coin-flip argument)
+
+We report **buffered detection recall** on **known flood report points only**:
+
+> recall at buffer B = (NOAA points with ≥1 SAR flood pixel within B) / (NOAA flood points evaluated)
+
+- **Not** overall classification accuracy; no true negatives; **50% coin-flip logic does not apply**.
+- Old ~55% was from the **circular** design; revised independent 500 m recall is **89% (Raleigh)** and **61% (Houston)**.
+- A spatial null (random points in AOI) depends on flooded area and buffer width — generally **not** 50% (see **#14**).
+
+### Manuscript / rebuttal text (template)
+
+> We report buffered detection recall at 100–1000 m for independent NOAA locations (N−M events). This is not overall classification accuracy; the denominator contains only documented flood locations, so comparison to a 50% coin flip is not applicable. Recall increases with buffer distance as expected for a distance-tolerance metric. We replaced the prior single 1 km “accuracy” figure with this multi-buffer recall table.
+
+---
+
+## Comment #4 — No FEMA / baseline comparison
+
+**Reviewer concern:** Claims about complementing existing maps not tested against FEMA or other baselines.
+
+**Status:** Not done
+
+### Planned response (when addressed)
+
+> Compare ever-flooded / hotspot layers to FEMA NFHL zones (or equivalent) for overlap statistics; report as supplementary validation, not headline metric.
+
+---
+
+## Comment #5 — Urban SAR limits understated
+
+**Reviewer concern:** Double-bounce, lack of coherence/polarimetry baseline; urban SAR limitations under-discussed.
+
+**Status:** Not done
+
+### Planned response (when addressed)
+
+> Expand Discussion on SAR limits in urban areas; cite double-bounce and mixed land-cover effects; note validation uses pre-urban ever-flooded layer for point recall.
+
+---
+
+## Comment #6 — Unsupported local knowledge claims
+
+**Reviewer concern:** City reports / news cited without proper sources.
+
+**Status:** Not done
+
+### Planned response (when addressed)
+
+> Remove or cite all local-knowledge claims; replace with NOAA/USGS/SAR-only statements where citations are unavailable.
+
+---
+
+## Comment #7 — Weak control event
+
+**Reviewer concern:** Only one non-flood control; no false-positive metrics.
+
+**Status:** Not done
+
+### Notes
+
+- Houston GEE config includes `control_2024-10-15` (excluded from hotspot map).
+- See also **#11** (documentation).
+
+---
+
+## Comment #8 — Arbitrary USGS gauge thresholds
+
+**Reviewer concern:** 10 ft / 40 ft cutoffs not justified; limits generalizability.
+
+**Status:** **Addressed**
+
+### What we did
+
+- **Inclusion:** NOAA floods with coordinates, **2015–2025** — **no gage filter**.
+- USGS recorded in event catalog as **metadata only** (legacy 10 ft / 40 ft flags are informational).
+
+See [`event_selection_methodology.md`](event_selection_methodology.md).
 
 | Original claim | Current practice |
 |----------------|------------------|
-| Events required NOAA **and** USGS above 10 ft / 40 ft | **NOAA + coordinates only** for inclusion |
-| ~15 Raleigh / ~9 Houston “major” floods | **49 / 55** events with coordinates (2015–2025) |
-| USGS as validation gate | USGS as **supplementary column** in event catalog |
+| Events required NOAA **and** USGS >10 ft / >40 ft | **NOAA + coordinates only** |
+| ~15 Raleigh / ~9 Houston “major” floods | **49 / 55** events (2015–2025) |
 
-See [`event_selection_methodology.md`](event_selection_methodology.md) for the full pipeline.
+### Manuscript / rebuttal text (template)
+
+> The event universe consists of NOAA-reported urban flood events with coordinates during 2015–2025. USGS daily gage height at Crabtree Creek (Raleigh) and Buffalo Bayou (Houston) was recorded per event in the supplementary catalog but was not used as an inclusion criterion. Sentinel-1 availability determines map (M) versus independent test (N−M) roles.
+
+---
+
+## Comment #9 — Image window bias
+
+**Reviewer concern:** 30-day pre / 2-day post windows may miss flash floods.
+
+**Status:** **Partial**
+
+### What we did
+
+- Pre/post lags and S1 image IDs documented per event in [`event_catalog_2015_2025.csv`](../data/processed/event_catalog_2015_2025.csv).
+
+### Manuscript / rebuttal text (template)
+
+> Sentinel-1 pairs were selected within a 30-day pre- and 2-day post-event window (same relative orbit). Event-level pre/post dates and lag days are listed in Table S1. We acknowledge that very rapid flash floods may fall outside ideal observation windows; this is stated as a limitation.
+
+---
+
+## Comment #10 — Precision, recall terminology, IoU
+
+**Reviewer concern:** Only buffered recall reported; imprecise use of “accuracy”; no precision / IoU.
+
+**Status:** **Partial**
+
+### What we did
+
+- Headline metric: **buffered detection recall** (point-based, positive references only).
+- Do **not** use the term “accuracy” for this metric (see **#3**).
+
+### What remains
+
+- **Precision / FAR** need a full reference inundation map or negative point sample.
+- **IoU** needs pixel-wise reference, not point-only NOAA.
+
+### Manuscript / rebuttal text (template)
+
+> We report buffered detection recall for independent NOAA flood locations, following common practice for point-referenced flood map evaluation. Pixel-wise precision, false-alarm rate, and IoU require a complete reference inundation layer and are left for future work with aerial or survey data.
+
+---
+
+## Comment #11 — Control event poorly documented
+
+**Reviewer concern:** Control (non-flood) event date and verification unclear.
+
+**Status:** Not done
+
+### Notes
+
+- Houston control: `control_2024-10-15` in GEE upload script; excluded from map aggregation.
+- See also **#7**.
+
+### Planned response (when addressed)
+
+> Add control event to Table S1 with date, S1 pair, and verification source (no NOAA flood report / no gauge exceedance / clear imagery).
+
+---
+
+## Comment #12 — Temporal aggregation bias
+
+**Reviewer concern:** Uneven Sentinel-1 coverage across events skews hotspot frequency.
+
+**Status:** Not done
+
+### Planned response (when addressed)
+
+> Report per-event observation dates in catalog; discuss in Limitations that frequency map reflects detectable events, not uniform temporal sampling.
+
+---
+
+## Comment #13 — No flood depth / severity
+
+**Reviewer concern:** Surface water only; no depth or severity.
+
+**Status:** Not done
+
+### Planned response (when addressed)
+
+> One Limitations paragraph: SAR change detection maps extent, not depth; NOAA narratives provide qualitative severity only.
+
+---
+
+## Comment #14 — No random / simple baselines
+
+**Reviewer concern:** No stream-proximity, random-point, or FEMA overlay baselines.
+
+**Status:** Not done
+
+### Notes
+
+- Proper null for our recall metric: random points in AOI → hit rate ≈ (buffered flood area) / (AOI area), **not 50%** (see **#3**).
+
+### Planned response (when addressed)
+
+> Report random-point and stream-buffer baselines in supplement; compare to SAR recall at each buffer distance.
+
+---
+
+## Comment #15 — Title and terminology
+
+**Reviewer concern:** “Safeguarding,” “multi-sensor,” “flash floods” may mislead.
+
+**Status:** Not done
+
+### Planned response (when addressed)
+
+> Narrow title to SAR hotspot mapping; align “multi-sensor” with actual inputs (S1 primary; S2/Landsat optional); use “urban flood” unless events are specifically flash-flood-only.
+
+---
+
+## Comment #16 — Citation accuracy
+
+**Reviewer concern:** Some citations do not support claims made.
+
+**Status:** Not done
+
+### Planned response (when addressed)
+
+> Audit each citation against claim; remove or replace unsupported references.
+
+---
+
+## Comment #17 — Limited statistics
+
+**Reviewer concern:** No confidence intervals, per-event breakdown, mean distance error.
+
+**Status:** Not done
+
+### Planned response (when addressed)
+
+> Add per-city recall with exact hit counts (already in table); optional bootstrap CIs and median distance-to-nearest flood pixel in supplement.
 
 ---
 
 ## Comment #18 — Study period and event-level catalog
 
-### Manuscript text (template)
+**Reviewer concern:** 2010–2025 vs Sentinel-1 (2014+); need reproducible event table.
 
-> All analyses use the **2015–2025** study period, consistent with Sentinel-1 availability. Events before 2015 are excluded from screening, mapping, and validation because no SAR imagery existed. A complete event-level catalog (Table S1 / supplementary CSV) lists every NOAA flood report with coordinates in this window, USGS gauge stage on the event date, Sentinel-1 pairing when available, and the study role of each event (map, threshold training, independent test, or excluded).
+**Status:** **Addressed**
 
-### Reproducible catalogs
+### What we did
 
-Regenerate with:
+- Unified study period: **2015–2025** everywhere.
+- Reproducible catalogs via `code/validation/build_event_catalog.py`.
 
 ```bash
 python3 code/validation/build_event_catalog.py
 ```
 
-**Outputs:**
-
 | File | Contents |
 |------|----------|
-| [`data/processed/event_catalog_2015_2025.csv`](../data/processed/event_catalog_2015_2025.csv) | One row per NOAA event (2015–2025) with study role and SAR metadata |
-| [`data/processed/event_catalog_sar_composites_2015_2025.csv`](../data/processed/event_catalog_sar_composites_2015_2025.csv) | One row per Sentinel-1 composite from the imagery-matching pipeline |
+| [`event_catalog_2015_2025.csv`](../data/processed/event_catalog_2015_2025.csv) | One row per NOAA event — study role, USGS, SAR metadata |
+| [`event_catalog_sar_composites_2015_2025.csv`](../data/processed/event_catalog_sar_composites_2015_2025.csv) | One row per S1 composite |
 
-### NOAA catalog columns
+**Event counts (with coordinates):**
 
-- **Identity:** `noaa_event_id`, `event_date`, `county`, `begin_location`, `begin_lat`, `begin_lon`
-- **USGS:** `usgs_gauge_id`, `usgs_gage_ft_on_event_date`, `usgs_exceeds_city_threshold` — **informational only** (legacy reference levels: Raleigh 10 ft, Houston 40 ft; not used for inclusion)
-- **SAR:** `gee_composite_id`, `pipeline_sar_composite_id`, `s1_before_date`, `s1_after_date`, `s1_pre_lag_days`, `s1_post_lag_days`, `s1_before_image_id`, `s1_after_image_id`, `s1_polarization`, `s1_relative_orbit`
-- **Study role:** `study_role`, `inclusion_or_exclusion_reason`
+| City | N | N−M (test) | SAR in GEE map |
+|------|---|------------|----------------|
+| Raleigh | 49 | 37 | 5 composites |
+| Houston | 55 | 29 | 10 composites (+ 1 control) |
 
-### `study_role` values
+**`study_role` values:** `independent_validation`, `map_sar`, `map_sar_threshold_train`, `sar_matched_not_in_gee_map`, `excluded_no_coordinates`.
 
-| Role | Meaning |
-|------|---------|
-| `independent_validation` | N−M — NOAA flood with no SAR pair; used for buffered recall test |
-| `map_sar_threshold_train` | In GEE ever-flooded map **and** threshold-training subset |
-| `map_sar` | In GEE ever-flooded map only |
-| `sar_matched_not_in_gee_map` | SAR pair exists in pipeline but composite not selected for final GEE map |
-| `excluded_no_coordinates` | Missing `BEGIN_LAT` / `BEGIN_LON` |
+GEE composite IDs are authoritative for map roles (`generate_flood_hotspots_gee_upload.js`).
 
-**GEE composite IDs are authoritative** for mapping roles (`generate_flood_hotspots_gee_upload.js`). Pipeline composite IDs may differ (e.g. Raleigh pipeline `775032_and_4_more` vs GEE `775029_and_1_more` for the same July 2018 imagery).
+### Manuscript / rebuttal text (template)
 
-### Event counts (2015–2025, with coordinates)
-
-| City | N (total) | Independent (N−M) | Map SAR | Threshold train (NOAA points) | SAR matched, not in GEE map |
-|------|-----------|-------------------|---------|-------------------------------|-----------------------------|
-| **Raleigh** | 49 | 37 | 3 | 3 | 6 |
-| **Houston** | 55 | 29 | 20 | 5 | 1 |
-
-Houston’s single `sar_matched_not_in_gee_map` event is a pipeline match not carried into the final 10-composite GEE map. Raleigh’s six similar events are July–August 2018 and 2022–2024 storms where SAR pairs exist but were not among the five composites selected for the published map.
+> All analyses use 2015–2025, consistent with Sentinel-1 availability. Table S1 lists every NOAA flood report with coordinates, USGS gage on the event date, Sentinel-1 pairing when available, and each event’s role (map, threshold training, independent test, or excluded).
 
 ---
 
-## Final Results
+## Appendix A — Method summary (cross-cutting)
 
-### Independent validation (headline — use in paper)
+**Goal:** Map recurring urban flood hotspots in **Raleigh** and **Houston** using Sentinel-1 + NOAA; validate with independent N−M design.
 
-Reference: NOAA locations from **N − M** events vs **ever-flooded** SAR map.
+**Framework:**
 
-| Buffer | Raleigh (n = 36 in AOI) | Houston (n = 28 in AOI) |
-|--------|-------------------------|-------------------------|
-| **100 m** | 13/36 = **36%** | 3/28 = **11%** |
-| **250 m** | 22/36 = **61%** | 10/28 = **36%** |
-| **500 m** | 32/36 = **89%** | 17/28 = **61%** |
-| **1000 m** | 36/36 = **100%** | 25/28 = **89%** |
+| Group | Role |
+|-------|------|
+| **N** | All NOAA floods with coordinates (2015–2025) |
+| **M** | Build ever-flooded map from SAR |
+| **N − M** | Independent validation locations |
 
-Notes:
+**Detection:** S1 GRD change detection; locked dB thresholds; pre-urban ever-flooded layer for validation; urban mask for hotspot display only.
 
-- Raleigh: 37 independent points total; 1 outside focus AOI → 36 used in recall
-- Houston: 29 independent points total; 1 outside focus AOI → 28 used in recall
-- **Do not** report diagnostic M-event recall (same events that built the map)
-
-### Interpretation
-
-- Recall **increases with buffer distance** in both cities — expected and internally consistent.
-- **Raleigh:** strong agreement at 500 m and 1000 m; moderate at 250 m; weaker at 100 m.
-- **Houston:** 89% at 1000 m but only 11% at 100 m — larger metro AOI, more dispersed NOAA reports, bayou-scale SAR detections.
-- The old **88.9%** figure should **not** be used; it mixed training and test events and relied on a single 1 km buffer on a circular design.
+**Maps:** (1) ever-flooded union (validation), (2) hotspot frequency (1× / 2–3× / 4+×).
 
 ---
 
-## Draft Results paragraph
+## Appendix B — Draft Results paragraph
 
 > Independent validation used NOAA-reported flood locations from events without Sentinel-1 coverage (N−M), which did not contribute to the ever-flooded map built from SAR events (M). Buffered detection recall increased with tolerance distance as expected. For Raleigh (n = 36), recall was 36% at 100 m, 61% at 250 m, 89% at 500 m, and 100% at 1000 m. For Houston (n = 28), recall was 11% at 100 m, 36% at 250 m, 61% at 500 m, and 89% at 1000 m. Houston's lower recall at fine buffers likely reflects the larger metropolitan AOI and greater spatial spread of report locations relative to bayou-aligned flood detections. Detection thresholds (−1.8 dB VV+VH, −2.0 dB VV-only) were locked per city using a training subset of M events before map construction. All events are documented in a supplementary event catalog for 2015–2025 (Table S1).
 
 ---
 
-## Limitations (for Discussion)
+## Appendix C — Limitations (Discussion)
 
-- NOAA remains the spatial reference (not independent aerial imagery or FEMA zones for headline metric)
-- USGS gage at a single station may not reflect localized floods at NOAA report locations; gage was not used to filter events
-- 100 m recall is limited, especially in Houston
-- Ever-flooded layer is intentionally generous
-- NOAA point locations carry positional uncertainty
-- Hotspot frequency map and validation ever-flooded layer answer different questions
+- NOAA remains the spatial reference (**#1**); not FEMA or aerial imagery for headline metric (**#4**).
+- USGS gage not used to filter events (**#8**); single station may not reflect local report locations.
+- 100 m recall limited, especially Houston (**#3**).
+- Recall only — no precision/IoU (**#10**).
+- No random/FEMA baselines yet (**#14**).
+- S1 window and temporal sampling (**#9**, **#12**).
+- No flood depth (**#13**).
+- Ever-flooded layer intentionally generous; NOAA positional uncertainty.
 
 ---
 
-## Reproducibility
+## Appendix D — Reproducibility
 
 ```bash
 python3 code/validation/build_independent_validation.py
 python3 code/validation/build_event_catalog.py
 ```
 
-GEE: paste `code/gee_mapping/generate_flood_hotspots_gee_upload.js` into Earth Engine; set `selectedCity` to `raleigh` or `houston`.
+GEE: paste `code/gee_mapping/generate_flood_hotspots_gee_upload.js`; set `selectedCity` to `raleigh` or `houston`.
 
-Config: [`data/processed/validation_split.json`](../data/processed/validation_split.json)
+Config: [`validation_split.json`](../data/processed/validation_split.json)
+
+Related docs: [`validation_independence.md`](validation_independence.md), [`event_selection_methodology.md`](event_selection_methodology.md)

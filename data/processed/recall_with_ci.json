@@ -1,0 +1,89 @@
+{
+  "metric": "buffered_detection_recall",
+  "reference": "noaa_nm_independent_test",
+  "ci_method": "wilson_95",
+  "buffers_m": [
+    100,
+    250,
+    500,
+    1000
+  ],
+  "cities": {
+    "raleigh": [
+      {
+        "buffer_m": 100,
+        "hits": 13,
+        "total": 36,
+        "recall_pct": 36.1,
+        "ci95_low_pct": 22.5,
+        "ci95_high_pct": 52.4,
+        "ci95_label": "22\u201352%"
+      },
+      {
+        "buffer_m": 250,
+        "hits": 22,
+        "total": 36,
+        "recall_pct": 61.1,
+        "ci95_low_pct": 44.9,
+        "ci95_high_pct": 75.2,
+        "ci95_label": "45\u201375%"
+      },
+      {
+        "buffer_m": 500,
+        "hits": 32,
+        "total": 36,
+        "recall_pct": 88.9,
+        "ci95_low_pct": 74.7,
+        "ci95_high_pct": 95.6,
+        "ci95_label": "75\u201396%"
+      },
+      {
+        "buffer_m": 1000,
+        "hits": 36,
+        "total": 36,
+        "recall_pct": 100.0,
+        "ci95_low_pct": 90.4,
+        "ci95_high_pct": 100.0,
+        "ci95_label": "90\u2013100%"
+      }
+    ],
+    "houston": [
+      {
+        "buffer_m": 100,
+        "hits": 3,
+        "total": 28,
+        "recall_pct": 10.7,
+        "ci95_low_pct": 3.7,
+        "ci95_high_pct": 27.2,
+        "ci95_label": "4\u201327%"
+      },
+      {
+        "buffer_m": 250,
+        "hits": 10,
+        "total": 28,
+        "recall_pct": 35.7,
+        "ci95_low_pct": 20.7,
+        "ci95_high_pct": 54.2,
+        "ci95_label": "21\u201354%"
+      },
+      {
+        "buffer_m": 500,
+        "hits": 17,
+        "total": 28,
+        "recall_pct": 60.7,
+        "ci95_low_pct": 42.4,
+        "ci95_high_pct": 76.4,
+        "ci95_label": "42\u201376%"
+      },
+      {
+        "buffer_m": 1000,
+        "hits": 25,
+        "total": 28,
+        "recall_pct": 89.3,
+        "ci95_low_pct": 72.8,
+        "ci95_high_pct": 96.3,
+        "ci95_label": "73\u201396%"
+      }
+    ]
+  }
+}

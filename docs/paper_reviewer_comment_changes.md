@@ -6,7 +6,7 @@ Point-by-point responses for manuscript revision. Use the **progress table** bel
 
 1. **In paper (#6, #13, #15)** — Already applied to the manuscript. Do not re-insert; use those sections only as reference.
 2. **Needs paper** — Copy **Manuscript / rebuttal text** from each comment section marked **Needs paper** in the progress table (**Appendix B** for Results; **Appendix E** / Comment **#14** for Table SX).
-3. **Not done (#4, #16, #17)** — Placeholders only until expanded in this doc.
+3. **Not done (#4, #16)** — Placeholders only until expanded in this doc.
 4. **Do not** restore old headline metrics (88.9% accuracy, circular validation design).
 
 ### Progress legend
@@ -40,10 +40,10 @@ Point-by-point responses for manuscript revision. Use the **progress table** bel
 | **14** | No random / simple baselines | **Addressed** — random-point baseline | **Needs paper** |
 | **15** | Title and terminology | **Addressed** | **In paper** |
 | **16** | Citation accuracy | Not done | Not done |
-| **17** | Limited statistics | Not done | Not done |
+| **17** | Limited statistics | **Addressed** — Wilson 95% CIs | **Needs paper** |
 | **18** | Study period; event table | **Addressed** | **Needs paper** |
 
-**Summary:** **3 in paper** (#6, #13, #15) · **12 need paper** (#1–#3, #5, #7–#12, #14, #18) · **3 not done** (#4, #16, #17)
+**Summary:** **3 in paper** (#6, #13, #15) · **13 need paper** (#1–#3, #5, #7–#12, #14, #17, #18) · **2 not done** (#4, #16)
 
 ---
 
@@ -480,11 +480,43 @@ Gaps (e.g., Raleigh 2019–2021, 2023) mean **zero** frequency contribution in t
 
 **Reviewer concern:** No confidence intervals, per-event breakdown, mean distance error.
 
-**Status:** Not done · **Future — expand this section when analysis is ready**
+**Status:** **Addressed** (repo) · **Needs paper**
 
-### Planned response (when addressed)
+**Minimal scope:** Exact hit counts + Wilson 95% CIs; distance handled via multi-buffer design (**#3**). No per-event table, bootstrap, or median-distance GEE run.
 
-> Add per-city recall with exact hit counts (already in table); optional bootstrap CIs and median distance-to-nearest flood pixel in supplement.
+### What we did
+
+- All recall values reported as **hits/total** (already in **#3**, **#14**, Appendix B).
+- **Wilson 95% confidence intervals** on independent N−M recall (`code/validation/compute_recall_ci.py` → `data/processed/recall_with_ci.json`).
+
+```bash
+python3 code/validation/compute_recall_ci.py
+```
+
+### Results — independent N−M recall with 95% CI (Wilson)
+
+| Buffer | Raleigh | 95% CI | Houston | 95% CI |
+|--------|---------|--------|---------|--------|
+| 100 m | 13/36 = 36% | 22–52% | 3/28 = 11% | 4–27% |
+| 250 m | 22/36 = 61% | 45–75% | 10/28 = 36% | 21–54% |
+| 500 m | 32/36 = 89% | 75–96% | 17/28 = 61% | 42–76% |
+| 1000 m | 36/36 = 100% | 90–100% | 25/28 = 89% | 73–96% |
+
+Wide CIs at fine buffers (especially Houston, n = 28) reflect small independent test samples, not omitted analysis.
+
+### Distance error (rebuttal — no new metric)
+
+We report **buffered detection recall** at fixed tolerances (100–1000 m), not continuous distance-to-nearest-flood. Multi-buffer recall encodes spatial uncertainty in NOAA report locations (**#3**). Median distance to nearest SAR pixel was not computed in this revision.
+
+### What we did not do
+
+- Per-event recall breakdown.
+- Bootstrap CIs (Wilson exact intervals suffice for binomial proportions).
+- Median / mean distance to nearest flood pixel (GEE).
+
+### Manuscript / rebuttal text
+
+> Independent validation recall is reported with exact hit counts and **Wilson 95% confidence intervals** (supplement table). For Raleigh (n = 36), 500 m recall was 89% (32/36; 95% CI 75–96%). For Houston (n = 28), 500 m recall was 61% (17/28; 95% CI 42–76%). We evaluate agreement at fixed spatial buffers rather than reporting mean geolocation error; recall increases with buffer width as expected when NOAA points have positional uncertainty (**#3**).
 
 ---
 
@@ -570,7 +602,7 @@ See **Comment #14** for method, GEE output, and rebuttal text. Use this table in
 - NOAA remains the spatial reference (**#1**); not FEMA or aerial imagery for headline metric (**#4**).
 - USGS gage not used to filter events (**#8**); single station may not reflect local report locations.
 - 100 m recall limited, especially Houston (**#3**).
-- Recall only — no precision/IoU (**#10**).
+- Recall with Wilson 95% CIs on hit counts (**#17** — `recall_with_ci.json`); no precision/IoU (**#10**).
 - Random-point baseline complete (**#14**): Raleigh and Houston vs N−M NOAA in comment section.
 - S1 window and temporal sampling (**#9**, **#12** — **#12** draft in comment section).
 - Houston non-flood control documented (**#7**, **#11** — draft in comment sections); single control, no FP rate.
@@ -584,6 +616,7 @@ See **Comment #14** for method, GEE output, and rebuttal text. Use this table in
 ```bash
 python3 code/validation/build_independent_validation.py
 python3 code/validation/build_event_catalog.py
+python3 code/validation/compute_recall_ci.py
 ```
 
 GEE: paste `code/gee_mapping/generate_flood_hotspots_gee_upload.js`; set `selectedCity` to `raleigh` or `houston`. Console outputs: **HEADLINE** (N−M NOAA recall), **BASELINE** (random null, **#14**).

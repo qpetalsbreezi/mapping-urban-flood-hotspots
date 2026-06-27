@@ -1,31 +1,42 @@
 # Paper Changes for Reviewer Comments
 
-Point-by-point responses for manuscript revision. Use the **status table** for a quick overview, then jump to each **Comment #** section for detail and draft rebuttal text.
+Point-by-point responses for manuscript revision. Use the **progress table** below, then jump to each **Comment #** section for detail and draft text.
+
+### Progress legend
+
+| Manuscript column | Meaning |
+|-------------------|---------|
+| **In paper** | Change applied to the manuscript |
+| **Needs paper** | Addressed in repo/docs or analysis; draft text below — still to insert in manuscript |
+| **Partial** | Partly done; remaining work noted in comment section |
+| **Not done** | Not yet addressed |
 
 ---
 
-## Status at a glance
+## Progress at a glance
 
-| # | Reviewer concern | Status |
-|---|------------------|--------|
-| **1** | Circular validation (NOAA used for selection and testing) | **Partial** |
-| **2** | Threshold overfitting (dB tuned on same data evaluated) | **Addressed** |
-| **3** | 1 km buffer too coarse; ~55% misread as “coin flip” | **Addressed** |
-| **4** | No FEMA / baseline comparison | Not done |
-| **5** | Urban SAR limits understated | Not done |
-| **6** | Unsupported “local knowledge” claims | Not done |
-| **7** | Weak control event (one non-flood case) | Not done |
-| **8** | Arbitrary USGS gauge thresholds (10 ft / 40 ft) | **Addressed** |
-| **9** | Image window bias (30-day pre / 2-day post) | **Partial** |
-| **10** | Missing precision, recall terminology, IoU | **Partial** |
-| **11** | Control event poorly documented | Not done |
-| **12** | Temporal aggregation bias (uneven S1 coverage) | Not done |
-| **13** | No flood depth / severity | Not done |
-| **14** | No random / simple baselines | Not done |
-| **15** | Title and terminology misleading | Not done |
-| **16** | Citation accuracy | Not done |
-| **17** | Limited statistics (no CIs, per-event breakdown) | Not done |
-| **18** | 2010–2025 vs Sentinel-1; need full event table | **Addressed** |
+| # | Reviewer concern | Repo / analysis | Manuscript |
+|---|------------------|-----------------|------------|
+| **1** | Circular validation | **Partial** — N−M design | **Needs paper** |
+| **2** | Threshold overfitting | **Addressed** | **Needs paper** |
+| **3** | Buffer distance; “coin flip” | **Addressed** | **Needs paper** |
+| **4** | No FEMA / baseline comparison | Not done | Not done |
+| **5** | Urban SAR limits understated | Not done | Not done |
+| **6** | Unsupported “local knowledge” claims | **Addressed** | **In paper** |
+| **7** | Weak control event | Not done | Not done |
+| **8** | Arbitrary USGS gauge thresholds | **Addressed** | **Needs paper** |
+| **9** | Image window bias | **Partial** — in event catalog | **Needs paper** |
+| **10** | Precision / recall / IoU | **Partial** — recall defined | **Needs paper** |
+| **11** | Control event poorly documented | Not done | Not done |
+| **12** | Temporal aggregation bias | Not done | Not done |
+| **13** | No flood depth / severity | **Addressed** | **In paper** |
+| **14** | No random / simple baselines | Not done | Not done |
+| **15** | Title and terminology | **Addressed** | **In paper** |
+| **16** | Citation accuracy | Not done | Not done |
+| **17** | Limited statistics | Not done | Not done |
+| **18** | Study period; event table | **Addressed** | **Needs paper** |
+
+**Summary:** **3 in paper** (#6, #13, #15) · **7 need paper** (#1, #2, #3, #8, #9, #10, #18) · **8 not done** (#4, #5, #7, #11, #12, #14, #16, #17)
 
 ---
 
@@ -33,7 +44,7 @@ Point-by-point responses for manuscript revision. Use the **status table** for a
 
 **Reviewer concern:** NOAA data used for both event selection and accuracy testing; headline **88.9%** likely overoptimistic.
 
-**Status:** **Partial**
+**Status:** **Partial** (repo) · **Needs paper**
 
 ### What we did
 
@@ -58,7 +69,7 @@ See [`validation_independence.md`](validation_independence.md).
 
 **Reviewer concern:** dB thresholds tuned on the same events used for evaluation.
 
-**Status:** **Addressed**
+**Status:** **Addressed** (repo) · **Needs paper**
 
 ### What we did
 
@@ -83,7 +94,7 @@ Config: [`data/processed/validation_split.json`](../data/processed/validation_sp
 
 **Reviewer concern:** 1 km buffer too coarse; 500 m recall (~55.6% in old run) interpreted as near-random / coin-flip performance.
 
-**Status:** **Addressed**
+**Status:** **Addressed** (repo) · **Needs paper**
 
 ### What we did
 
@@ -144,11 +155,13 @@ We report **buffered detection recall** on **known flood report points only**:
 
 **Reviewer concern:** City reports / news cited without proper sources.
 
-**Status:** Not done
+**Status:** **Addressed** (repo) · **In paper**
 
-### Planned response (when addressed)
+### What we did (manuscript)
 
-> Remove or cite all local-knowledge claims; replace with NOAA/USGS/SAR-only statements where citations are unavailable.
+- Removed uncited claims: city engineering reports, news coverage, local stormwater assessments.
+- Dropped refs 4–5 from the discussion sentence that relied on those sources.
+- Discussion now rests on NOAA, USGS (context), and SAR only.
 
 ---
 
@@ -169,7 +182,7 @@ We report **buffered detection recall** on **known flood report points only**:
 
 **Reviewer concern:** 10 ft / 40 ft cutoffs not justified; limits generalizability.
 
-**Status:** **Addressed**
+**Status:** **Addressed** (repo) · **Needs paper**
 
 ### What we did
 
@@ -193,7 +206,7 @@ See [`event_selection_methodology.md`](event_selection_methodology.md).
 
 **Reviewer concern:** 30-day pre / 2-day post windows may miss flash floods.
 
-**Status:** **Partial**
+**Status:** **Partial** (repo) · **Needs paper**
 
 ### What we did
 
@@ -209,7 +222,7 @@ See [`event_selection_methodology.md`](event_selection_methodology.md).
 
 **Reviewer concern:** Only buffered recall reported; imprecise use of “accuracy”; no precision / IoU.
 
-**Status:** **Partial**
+**Status:** **Partial** (repo) · **Needs paper**
 
 ### What we did
 
@@ -260,11 +273,11 @@ See [`event_selection_methodology.md`](event_selection_methodology.md).
 
 **Reviewer concern:** Surface water only; no depth or severity.
 
-**Status:** Not done
+**Status:** **Addressed** (repo) · **In paper**
 
-### Planned response (when addressed)
+### What we did (manuscript)
 
-> One Limitations paragraph: SAR change detection maps extent, not depth; NOAA narratives provide qualitative severity only.
+- Added Limitations text: the method detects **flood presence (extent)**, not **depth or velocity**.
 
 ---
 
@@ -288,11 +301,12 @@ See [`event_selection_methodology.md`](event_selection_methodology.md).
 
 **Reviewer concern:** “Safeguarding,” “multi-sensor,” “flash floods” may mislead.
 
-**Status:** Not done
+**Status:** **Addressed** (repo) · **In paper**
 
-### Planned response (when addressed)
+### What we did (manuscript)
 
-> Narrow title to SAR hotspot mapping; align “multi-sensor” with actual inputs (S1 primary; S2/Landsat optional); use “urban flood” unless events are specifically flash-flood-only.
+- **New title:** *Identifying Recurring Urban Flood Hotspots Using Open-Access Sentinel-1 SAR Imagery*
+- **Terminology:** “flash flooding” → **“urban flooding”**; “multi-sensor” → **“multi-source”**
 
 ---
 
@@ -324,7 +338,7 @@ See [`event_selection_methodology.md`](event_selection_methodology.md).
 
 **Reviewer concern:** 2010–2025 vs Sentinel-1 (2014+); need reproducible event table.
 
-**Status:** **Addressed**
+**Status:** **Addressed** (repo) · **Needs paper**
 
 ### What we did
 
@@ -389,7 +403,7 @@ GEE composite IDs are authoritative for map roles (`generate_flood_hotspots_gee_
 - Recall only — no precision/IoU (**#10**).
 - No random/FEMA baselines yet (**#14**).
 - S1 window and temporal sampling (**#9**, **#12**).
-- No flood depth (**#13**).
+- SAR detects flood **presence, not depth or velocity** (**#13** — **in paper**).
 - Ever-flooded layer intentionally generous; NOAA positional uncertainty.
 
 ---

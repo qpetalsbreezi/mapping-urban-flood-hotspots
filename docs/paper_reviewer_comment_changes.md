@@ -2,6 +2,13 @@
 
 Point-by-point responses for manuscript revision. Use the **progress table** below, then jump to each **Comment #** section for detail and draft text.
 
+### Instructions for paper-integration agent
+
+1. **In paper (#6, #13, #15)** — Already applied to the manuscript. Do not re-insert; use those sections only as reference.
+2. **Needs paper (#1, #2, #3, #8, #9, #10, #18)** — Copy the **Manuscript / rebuttal text** and tables from each comment section (and **Appendix B** for Results). Content below is ready to integrate.
+3. **Not done (#4, #5, #14, #16, #17)** — Placeholders only. When analysis or drafting is completed in this repo, the corresponding **Comment #** section will be expanded with **What we did**, numbers, and **Manuscript / rebuttal text** — integrate at that time.
+4. **Do not** restore old headline metrics (88.9% accuracy, circular validation design).
+
 ### Progress legend
 
 | Manuscript column | Meaning |
@@ -23,12 +30,12 @@ Point-by-point responses for manuscript revision. Use the **progress table** bel
 | **4** | No FEMA / baseline comparison | Not done | Not done |
 | **5** | Urban SAR limits understated | Not done | Not done |
 | **6** | Unsupported “local knowledge” claims | **Addressed** | **In paper** |
-| **7** | Weak control event | Not done | Not done |
+| **7** | Weak control event | **Partial** — one control documented | **Needs paper** |
 | **8** | Arbitrary USGS gauge thresholds | **Addressed** | **Needs paper** |
 | **9** | Image window bias | **Partial** — in event catalog | **Needs paper** |
 | **10** | Precision / recall / IoU | **Partial** — recall defined | **Needs paper** |
-| **11** | Control event poorly documented | Not done | Not done |
-| **12** | Temporal aggregation bias | Not done | Not done |
+| **11** | Control event poorly documented | **Addressed** | **Needs paper** |
+| **12** | Temporal aggregation bias | **Addressed** — analysis below | **Needs paper** |
 | **13** | No flood depth / severity | **Addressed** | **In paper** |
 | **14** | No random / simple baselines | Not done | Not done |
 | **15** | Title and terminology | **Addressed** | **In paper** |
@@ -36,7 +43,7 @@ Point-by-point responses for manuscript revision. Use the **progress table** bel
 | **17** | Limited statistics | Not done | Not done |
 | **18** | Study period; event table | **Addressed** | **Needs paper** |
 
-**Summary:** **3 in paper** (#6, #13, #15) · **7 need paper** (#1, #2, #3, #8, #9, #10, #18) · **8 not done** (#4, #5, #7, #11, #12, #14, #16, #17)
+**Summary:** **3 in paper** (#6, #13, #15) · **10 need paper** (#1–#3, #7–#12, #18) · **5 not done** (#4, #5, #14, #16, #17)
 
 ---
 
@@ -131,7 +138,7 @@ We report **buffered detection recall** on **known flood report points only**:
 
 **Reviewer concern:** Claims about complementing existing maps not tested against FEMA or other baselines.
 
-**Status:** Not done
+**Status:** Not done · **Future — expand this section when analysis is ready**
 
 ### Planned response (when addressed)
 
@@ -143,7 +150,7 @@ We report **buffered detection recall** on **known flood report points only**:
 
 **Reviewer concern:** Double-bounce, lack of coherence/polarimetry baseline; urban SAR limitations under-discussed.
 
-**Status:** Not done
+**Status:** Not done · **Future — expand this section when analysis is ready**
 
 ### Planned response (when addressed)
 
@@ -169,12 +176,21 @@ We report **buffered detection recall** on **known flood report points only**:
 
 **Reviewer concern:** Only one non-flood control; no false-positive metrics.
 
-**Status:** Not done
+**Status:** **Partial** (repo) · **Needs paper**
 
-### Notes
+### What we did
 
-- Houston GEE config includes `control_2024-10-15` (excluded from hotspot map).
-- See also **#11** (documentation).
+- Houston includes **one** deliberate non-flood **Sentinel-1 control** (`control_2024-10-15`).
+- Control is processed in the event viewer but **excluded** from ever-flooded and hotspot aggregation in `generate_flood_hotspots.js`.
+- We **do not** report false-positive rate or commission error from this single scene — acknowledge as limitation (see **#11** for full documentation).
+
+### What remains
+
+- A single control cannot support robust false-alarm statistics; expanding controls is future work.
+
+### Manuscript / rebuttal text (template)
+
+> As a qualitative sanity check, we include one Houston non-flood Sentinel-1 pair (15 October 2024) with no corresponding NOAA flood report and below-threshold streamflow (Table S1). This control is viewable in the single-event workflow but is excluded from ever-flooded and hotspot maps. We do not derive false-positive rates from a single control date; formal commission-error metrics would require additional non-flood observations or a full reference inundation layer.
 
 ---
 
@@ -244,16 +260,28 @@ See [`event_selection_methodology.md`](event_selection_methodology.md).
 
 **Reviewer concern:** Control (non-flood) event date and verification unclear.
 
-**Status:** Not done
+**Status:** **Addressed** (repo) · **Needs paper**
 
-### Notes
+### What we did
 
-- Houston control: `control_2024-10-15` in GEE upload script; excluded from map aggregation.
-- See also **#7**.
+Documented in [`event_catalog_sar_composites_2015_2025.csv`](../data/processed/event_catalog_sar_composites_2015_2025.csv) (`study_role = control_sar_no_flood`):
 
-### Planned response (when addressed)
+| Field | Value |
+|-------|--------|
+| **Composite ID** | `control_2024-10-15` |
+| **City** | Houston |
+| **Reference date** | 2024-10-15 |
+| **NOAA flood report** | None (`noaa_event_ids = none`) |
+| **USGS Buffalo Bayou (08073700)** | **27.87 ft** on 2024-10-15 (legacy 40 ft reference — not used as filter) |
+| **S1 before / after** | 2024-10-03 / 2024-10-15 (12-day pre, 0-day post lag) |
+| **In ever-flooded / hotspot map** | **No** |
+| **Purpose** | Visual sanity check in `visualize_flood_events.js` |
 
-> Add control event to Table S1 with date, S1 pair, and verification source (no NOAA flood report / no gauge exceedance / clear imagery).
+Regenerate catalog: `python3 code/validation/build_event_catalog.py`
+
+### Manuscript / rebuttal text (template)
+
+> Table S1 includes a documented non-flood control for Houston (composite `control_2024-10-15`, 15 October 2024): Sentinel-1 before/after images on 3 and 15 October 2024, no NOAA flood entry on that date, and Buffalo Bayou gage height 27.87 ft. This pair was excluded from ever-flooded and hotspot aggregation and is used only for qualitative inspection of detections under non-flood conditions.
 
 ---
 
@@ -261,11 +289,34 @@ See [`event_selection_methodology.md`](event_selection_methodology.md).
 
 **Reviewer concern:** Uneven Sentinel-1 coverage across events skews hotspot frequency.
 
-**Status:** Not done
+**Status:** **Addressed** (repo) · **Needs paper**
 
-### Planned response (when addressed)
+### Analysis
 
-> Report per-event observation dates in catalog; discuss in Limitations that frequency map reflects detectable events, not uniform temporal sampling.
+Hotspot **frequency** counts how many **mapped** SAR events flooded each pixel. Mapped events are unevenly spaced in time because they depend on Sentinel-1 availability and successful pairing, not uniform sampling.
+
+**Raleigh — 5 SAR composites in map (event dates):**
+
+| Year | Map composite dates |
+|------|---------------------|
+| 2018 | May, July |
+| 2022 | May |
+| 2024 | May, August |
+
+**Houston — 10 SAR composites in map:**
+
+| Year | Count | Example dates |
+|------|-------|----------------|
+| 2015 | 1 | May |
+| 2017 | 3 | Jan, Jun, Aug (Harvey) |
+| 2019 | 2 | May, Sep |
+| 2020–2022 | 1 each | Jun 2020, Jun 2021, Jan 2022 |
+
+Gaps (e.g., Raleigh 2019–2021, 2023) mean **zero** frequency contribution in those years — not proof of no flooding. The **ever-flooded** validation layer and **N−M** NOAA test use the full 2015–2025 report catalog (Table S1), not the frequency map alone.
+
+### Manuscript / rebuttal text (template)
+
+> Hotspot frequency reflects the number of **Sentinel-1-observed** flood events at each pixel, not the total number of NOAA-reported floods. Mapped events are irregularly spaced in time (Table S1): for example, Raleigh map composites fall in 2018, 2022, and 2024, while Houston includes clusters in 2017 (including Hurricane Harvey) and 2019. We therefore interpret frequency as “recurrence under observable SAR conditions” rather than a complete historical count. Independent validation uses all N−M NOAA report locations (2015–2025), separate from the frequency product.
 
 ---
 
@@ -285,7 +336,7 @@ See [`event_selection_methodology.md`](event_selection_methodology.md).
 
 **Reviewer concern:** No stream-proximity, random-point, or FEMA overlay baselines.
 
-**Status:** Not done
+**Status:** Not done · **Future — expand this section when analysis is ready**
 
 ### Notes
 
@@ -314,7 +365,7 @@ See [`event_selection_methodology.md`](event_selection_methodology.md).
 
 **Reviewer concern:** Some citations do not support claims made.
 
-**Status:** Not done
+**Status:** Not done · **Future — expand this section when analysis is ready**
 
 ### Planned response (when addressed)
 
@@ -326,7 +377,7 @@ See [`event_selection_methodology.md`](event_selection_methodology.md).
 
 **Reviewer concern:** No confidence intervals, per-event breakdown, mean distance error.
 
-**Status:** Not done
+**Status:** Not done · **Future — expand this section when analysis is ready**
 
 ### Planned response (when addressed)
 
@@ -361,7 +412,7 @@ python3 code/validation/build_event_catalog.py
 | Raleigh | 49 | 37 | 5 composites |
 | Houston | 55 | 29 | 10 composites (+ 1 control) |
 
-**`study_role` values:** `independent_validation`, `map_sar`, `map_sar_threshold_train`, `sar_matched_not_in_gee_map`, `excluded_no_coordinates`.
+**`study_role` values:** `independent_validation`, `map_sar`, `map_sar_threshold_train`, `sar_matched_not_in_gee_map`, `excluded_no_coordinates`, `control_sar_no_flood` (Houston only).
 
 GEE composite IDs are authoritative for map roles (`generate_flood_hotspots_gee_upload.js`).
 
@@ -402,7 +453,8 @@ GEE composite IDs are authoritative for map roles (`generate_flood_hotspots_gee_
 - 100 m recall limited, especially Houston (**#3**).
 - Recall only — no precision/IoU (**#10**).
 - No random/FEMA baselines yet (**#14**).
-- S1 window and temporal sampling (**#9**, **#12**).
+- S1 window and temporal sampling (**#9**, **#12** — **#12** draft in comment section).
+- Houston non-flood control documented (**#7**, **#11** — draft in comment sections); single control, no FP rate.
 - SAR detects flood **presence, not depth or velocity** (**#13** — **in paper**).
 - Ever-flooded layer intentionally generous; NOAA positional uncertainty.
 

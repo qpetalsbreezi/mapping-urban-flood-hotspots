@@ -82,6 +82,31 @@ GAGE = {
     "houston": {"id": "08073700", "name": "Buffalo Bayou", "threshold_ft": 40.0},
 }
 
+# Houston non-flood control (GEE sanity check; excluded from hotspot / ever-flooded map)
+HOUSTON_CONTROL = {
+    "city": "houston",
+    "composite_id": "control_2024-10-15",
+    "event_date": "2024-10-15",
+    "noaa_event_ids": "none",
+    "s1_before_date": "2024-10-03",
+    "s1_after_date": "2024-10-15",
+    "s1_before_offset_days": "-12",
+    "s1_after_offset_days": "0",
+    "s1_before_image_id": (
+        "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20241003T002718_20241003T002743_"
+        "055931_06D696_ACEF"
+    ),
+    "s1_after_image_id": (
+        "COPERNICUS/S1_GRD/S1A_IW_GRDH_1SDV_20241015T002719_20241015T002744_"
+        "056106_06DD72_7C83"
+    ),
+    "satellite": "S1A",
+    "mode": "IW",
+    "product": "GRDH",
+    "polarization": "1SDV",
+    "relative_orbit": "055931",
+}
+
 
 def parse_noaa_date(s: str) -> datetime | None:
     for fmt in ("%m/%d/%Y", "%Y-%m-%d"):
@@ -273,6 +298,15 @@ def summary_counts(rows: list[dict]) -> dict[str, int]:
     return counts
 
 
+def load_houston_control_row() -> dict:
+    return {
+        **HOUSTON_CONTROL,
+        "study_role": "control_sar_no_flood",
+        "in_gee_hotspot_map": "no",
+        "threshold_train": "no",
+    }
+
+
 def main() -> int:
     all_noaa: list[dict] = []
     sar_rows: list[dict] = []
@@ -293,6 +327,8 @@ def main() -> int:
                     "threshold_train": "yes" if cid in cfg.get("train", []) else "no",
                 }
             )
+
+    sar_rows.append(load_houston_control_row())
 
     out_all = ROOT / "data" / "processed" / "event_catalog_2015_2025.csv"
     out_sar = ROOT / "data" / "processed" / "event_catalog_sar_composites_2015_2025.csv"

@@ -46,7 +46,7 @@ venv.bak/
 *~
 
 # Data files (large datasets)
-# Keep generic large-binary patterns, but allow project-specific files that don't exist yet
+data/external/
 *.hdf5
 *.nc
 *.grib

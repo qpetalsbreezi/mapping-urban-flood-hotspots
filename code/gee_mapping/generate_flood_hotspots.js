@@ -1222,6 +1222,65 @@ randomRecall.evaluate(
   }
 );
 
+// FEMA NFHL area overlap (#4) — supplementary; not headline validation
+var FEMA_NFHL_ASSETS = {
+  raleigh: null, // e.g. 'projects/your-project/assets/nfhl_raleigh_sfha'
+  houston: null
+};
+
+function printFemaAreaOverlap(floodImage, femaAssetId, aoi) {
+  var nfhl = ee.FeatureCollection(femaAssetId);
+  var femaMask = ee.Image(0).byte().paint(nfhl, 1).clip(aoi).rename('fema');
+  var flooded = floodImage.clip(aoi).gt(0).rename('flood');
+  var area = ee.Image.pixelArea();
+  var scale = 100;
+  var floodedM2 = flooded.multiply(area).reduceRegion({
+    reducer: ee.Reducer.sum(),
+    geometry: aoi,
+    scale: scale,
+    maxPixels: 1e13,
+    bestEffort: true
+  }).get('flood');
+  var floodedInFemaM2 = flooded.updateMask(femaMask.eq(1)).multiply(area).reduceRegion({
+    reducer: ee.Reducer.sum(),
+    geometry: aoi,
+    scale: scale,
+    maxPixels: 1e13,
+    bestEffort: true
+  }).get('flood');
+  return ee.Dictionary({
+    flooded_m2: floodedM2,
+    flooded_in_fema_m2: floodedInFemaM2
+  });
+}
+
+var femaAssetId = FEMA_NFHL_ASSETS[selectedCity];
+if (!femaAssetId) {
+  print('FEMA NFHL area overlap (#4): upload data/external/nfhl_' + selectedCity +
+    '_sfha.geojson to EE Assets, then set FEMA_NFHL_ASSETS.' + selectedCity);
+  print('  Point-in-SFHA stats: python3 code/validation/compute_fema_overlap.py');
+  print('');
+} else {
+  var femaStats = printFemaAreaOverlap(everFloodedMap, femaAssetId, focusAOI);
+  femaStats.evaluate(
+    function(s) {
+      var flooded = Number(s.flooded_m2 || 0);
+      var inFema = Number(s.flooded_in_fema_m2 || 0);
+      var pct = flooded > 0 ? Math.round(100 * inFema / flooded) : 0;
+      var outside = flooded > 0 ? Math.round(100 * (1 - inFema / flooded)) : 0;
+      print('FEMA NFHL overlap — ever-flooded SAR vs SFHA (#4, supplement):');
+      print('  SAR ever-flooded area in FEMA SFHA: ' + Math.round(pct) + '%');
+      print('  SAR ever-flooded area outside FEMA SFHA: ' + outside + '%');
+      print('');
+    },
+    function(err) {
+      print('FEMA NFHL overlap (#4): evaluation failed');
+      print('  ' + err);
+      print('');
+    }
+  );
+}
+
 // Diagnostic: M-event NOAA points (used in map) — not independent, do not use as headline
 var mEventPoints = ee.FeatureCollection([]);
 for (var m = 0; m < preUrbanMaskList.length; m++) {

@@ -6,7 +6,7 @@ Point-by-point responses for manuscript revision. Use the **progress table** bel
 
 1. **In paper (#6, #13, #15)** — Already applied to the manuscript. Do not re-insert; use those sections only as reference.
 2. **Needs paper** — Copy **Manuscript / rebuttal text** from each comment section marked **Needs paper** in the progress table (**Appendix B** for Results; **Appendix E** / Comment **#14** for Table SX).
-3. **Not done (#4, #16)** — Placeholders only until expanded in this doc.
+3. **Not done (#16)** — Citation audit (manuscript only).
 4. **Do not** restore old headline metrics (88.9% accuracy, circular validation design).
 
 ### Progress legend
@@ -27,7 +27,7 @@ Point-by-point responses for manuscript revision. Use the **progress table** bel
 | **1** | Circular validation | **Partial** — N−M design | **Needs paper** |
 | **2** | Threshold overfitting | **Addressed** | **Needs paper** |
 | **3** | Buffer distance; “coin flip” | **Addressed** | **Needs paper** |
-| **4** | No FEMA / baseline comparison | Not done | Not done |
+| **4** | No FEMA / baseline comparison | **Partial** — point-in-SFHA + GEE area overlap | **Partial** — point stats ready; area % after EE upload |
 | **5** | Urban SAR limits understated | **Addressed** — discussion draft | **Needs paper** |
 | **6** | Unsupported “local knowledge” claims | **Addressed** | **In paper** |
 | **7** | Weak control event | **Partial** — one control documented | **Needs paper** |
@@ -43,7 +43,7 @@ Point-by-point responses for manuscript revision. Use the **progress table** bel
 | **17** | Limited statistics | **Addressed** — Wilson 95% CIs | **Needs paper** |
 | **18** | Study period; event table | **Addressed** | **Needs paper** |
 
-**Summary:** **3 in paper** (#6, #13, #15) · **13 need paper** (#1–#3, #5, #7–#12, #14, #17, #18) · **2 not done** (#4, #16)
+**Summary:** **3 in paper** (#6, #13, #15) · **13 need paper** (#1–#3, #5, #7–#12, #14, #17, #18) · **1 partial** (#4) · **1 not done** (#16)
 
 ---
 
@@ -146,11 +146,49 @@ We report **buffered detection recall** on **known flood report points only**:
 
 **Reviewer concern:** Claims about complementing existing maps not tested against FEMA or other baselines.
 
-**Status:** Not done · **Future — expand this section when analysis is ready**
+**Status:** **Partial** (repo) · **Partial** (manuscript — point stats below; pixel area % after optional GEE upload)
 
-### Planned response (when addressed)
+**Minimal scope:** FEMA NFHL **Special Flood Hazard Area (SFHA)** comparison as **supplement only** — headline validation remains NOAA N−M recall (**#1**, **#3**).
 
-> Compare ever-flooded / hotspot layers to FEMA NFHL zones (or equivalent) for overlap statistics; report as supplementary validation, not headline metric.
+### What we did
+
+1. **Point context (Python, reproducible)** — `code/validation/compute_fema_overlap.py` fetches FEMA NFHL layer 28 (SFHA) for each city AOI and reports how many **independent N−M NOAA points** fall inside mapped SFHA.
+
+```bash
+python3 code/validation/compute_fema_overlap.py
+```
+
+Output: `data/processed/fema_overlap.json` (cached polygons: `data/external/nfhl_{city}_sfha.geojson`).
+
+2. **Pixel overlap (GEE, optional one-time upload)** — `generate_flood_hotspots.js` prints **% of ever-flooded SAR area** inside vs outside FEMA SFHA after uploading cached geojson to Earth Engine Assets and setting `FEMA_NFHL_ASSETS.{city}`.
+
+### Results — N−M NOAA points in FEMA SFHA
+
+| City | N−M points | Inside FEMA SFHA | Outside SFHA |
+|------|------------|------------------|--------------|
+| Raleigh | 37 | 4 (**10.8%**) | 33 (**89.2%**) |
+| Houston | 29 | 10 (**34.5%**) | 19 (**65.5%**) |
+
+Most independent urban flood reports lie **outside** FEMA SFHA in both cities — especially Raleigh (~89% outside). SAR-detected recurring flood areas therefore capture **observed flood reports beyond regulatory floodplain maps**, consistent with a complementary (not redundant) product. This is contextual baseline evidence, not a replacement for NOAA recall.
+
+### GEE area overlap (fill after asset upload)
+
+Upload `data/external/nfhl_raleigh_sfha.geojson` (and Houston) to EE Assets, set `FEMA_NFHL_ASSETS`, re-run script. Console prints:
+
+```
+FEMA NFHL overlap — ever-flooded SAR vs SFHA (#4, supplement):
+  SAR ever-flooded area in FEMA SFHA: XX%
+  SAR ever-flooded area outside FEMA SFHA: YY%
+```
+
+### Manuscript / rebuttal text
+
+> We compared independent validation locations to FEMA National Flood Hazard Layer (NFHL) Special Flood Hazard Areas as a supplementary baseline, not as the primary accuracy metric. Most independent NOAA flood report locations fell **outside** FEMA SFHA (Raleigh 33/37; Houston 19/29), indicating that event-based urban flood reports and SAR-detected recurring extents are not fully represented by regulatory floodplain maps alone. Where NFHL geojson was uploaded to Earth Engine, we additionally report the percentage of SAR ever-flooded area overlapping FEMA SFHA (supplement). Headline validation remains buffered detection recall against independent NOAA locations (**#1**, **#3**).
+
+### What we did not do
+
+- Replace NOAA with FEMA as validation reference.
+- Stream-buffer or full NFHL zone-type breakdown (A vs AE vs X).
 
 ---
 
@@ -447,7 +485,7 @@ Gaps (e.g., Raleigh 2019–2021, 2023) mean **zero** frequency contribution in t
 ### What we did not do (out of minimal scope)
 
 - Stream-proximity baseline (NHD buffers).
-- FEMA NFHL overlap (**#4**).
+- FEMA NFHL overlap (**#4**) — point-in-SFHA done; pixel area overlap optional via GEE asset upload.
 
 ---
 
@@ -599,7 +637,8 @@ See **Comment #14** for method, GEE output, and rebuttal text. Use this table in
 ## Appendix C — Limitations (Discussion)
 
 - Urban SAR limits: layover, double-bounce; no coherence/PolSAR (**#5** — draft in comment section).
-- NOAA remains the spatial reference (**#1**); not FEMA or aerial imagery for headline metric (**#4**).
+- NOAA remains the spatial reference (**#1**); not FEMA or aerial imagery for headline metric.
+- FEMA NFHL point baseline (**#4**): most N−M NOAA points outside SFHA; optional GEE area overlap after asset upload.
 - USGS gage not used to filter events (**#8**); single station may not reflect local report locations.
 - 100 m recall limited, especially Houston (**#3**).
 - Recall with Wilson 95% CIs on hit counts (**#17** — `recall_with_ci.json`); no precision/IoU (**#10**).
@@ -617,9 +656,10 @@ See **Comment #14** for method, GEE output, and rebuttal text. Use this table in
 python3 code/validation/build_independent_validation.py
 python3 code/validation/build_event_catalog.py
 python3 code/validation/compute_recall_ci.py
+python3 code/validation/compute_fema_overlap.py
 ```
 
-GEE: paste `code/gee_mapping/generate_flood_hotspots_gee_upload.js`; set `selectedCity` to `raleigh` or `houston`. Console outputs: **HEADLINE** (N−M NOAA recall), **BASELINE** (random null, **#14**).
+GEE: paste `code/gee_mapping/generate_flood_hotspots_gee_upload.js`; set `selectedCity` to `raleigh` or `houston`. Console outputs: **HEADLINE** (N−M NOAA recall), **BASELINE** (random null, **#14**), **FEMA overlap** (**#4**, after NFHL asset upload).
 
 **Random baseline (#14):** 500 points, seed 42, same buffers as validation. Refactored scoring uses dilated ever-flooded map + `sampleRegions` (see Comment #14).
 

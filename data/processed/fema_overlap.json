@@ -1,0 +1,34 @@
+{
+  "comment": "reviewer_4_fema_baseline",
+  "scope": "minimal_point_in_sfha; pixel overlap via GEE asset upload",
+  "headline_validation": "NOAA N-M recall remains primary; FEMA is supplementary context",
+  "gee_area_overlap": {
+    "script": "code/gee_mapping/generate_flood_hotspots.js",
+    "config_key": "FEMA_NFHL_ASSETS",
+    "upload": "Upload nfhl_{city}_sfha.geojson from data/external/ to EE Assets"
+  },
+  "cities": {
+    "raleigh": {
+      "city": "raleigh",
+      "nfhl_sfha_features": 3987,
+      "nm_independent_points": 37,
+      "points_in_sfha": 4,
+      "points_outside_sfha": 33,
+      "pct_in_sfha": 10.8,
+      "pct_outside_sfha": 89.2,
+      "source": "FEMA NFHL MapServer layer 28 (SFHA_TF=T)",
+      "cache_geojson": "data/external/nfhl_raleigh_sfha.geojson"
+    },
+    "houston": {
+      "city": "houston",
+      "nfhl_sfha_features": 6844,
+      "nm_independent_points": 29,
+      "points_in_sfha": 10,
+      "points_outside_sfha": 19,
+      "pct_in_sfha": 34.5,
+      "pct_outside_sfha": 65.5,
+      "source": "FEMA NFHL MapServer layer 28 (SFHA_TF=T)",
+      "cache_geojson": "data/external/nfhl_houston_sfha.geojson"
+    }
+  }
+}

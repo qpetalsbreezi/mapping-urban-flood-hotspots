@@ -119,6 +119,47 @@ See also: [`validation_independence.md`](validation_independence.md)
 
 ---
 
+## Response — “~50% is a coin flip” (metric clarification)
+
+The reviewer appears to treat our reported percentages as **overall classification accuracy** on a balanced yes/no task (where uninformed guessing ≈ 50%). **That is not our metric.**
+
+### What we actually report
+
+**Buffered detection recall** (point-based, one-sided):
+
+> recall at buffer B = (number of NOAA flood points with ≥1 SAR flood pixel within B) / (number of NOAA flood points evaluated)
+
+- **Reference:** only **known flood report locations** (independent N−M events).
+- **Prediction:** ever-flooded SAR map (union of M events).
+- **Hit:** any flood pixel within **B** meters of the report point.
+- **Not included:** true negatives, false alarms, pixel-wise accuracy, or IoU.
+
+We do **not** classify random locations as flood vs non-flood, so there is no symmetric 50/50 “coin flip” null.
+
+### Why random chance is not 50%
+
+| Misconception | Reality |
+|---------------|---------|
+| “55% ≈ 50% → no skill” | 55% was the **old circular** 500 m result. Revised **independent** recall at 500 m is **89% (Raleigh)** and **61% (Houston)** — different design and definition. |
+| Random = 50% for any percentage metric | 50% applies to **balanced binary accuracy** (TP+TN)/N. Our metric is **recall on positive reference points only**. |
+| A fair spatial null | Place **n random points** in the AOI; expected hit rate ≈ **(area of flood map buffered by B) / (AOI area)** — typically **not** 50% (often much lower at 100 m for sparse flood extent). |
+
+Example intuition: if ever-flooded flood covers ~2% of the urban AOI, a random point has ~2% chance to land on flood (before buffering). With a 500 m buffer around each random point, the null rate rises with flood-patch size and buffer width — still a **spatial** quantity, not 50%.
+
+### Manuscript / rebuttal text (template)
+
+> We clarify that validation reports **buffered detection recall**, not overall classification accuracy. For each independent NOAA flood report location (events without Sentinel-1 coverage), we test whether the ever-flooded SAR map contains ≥1 detected flood pixel within 100–1000 m. The denominator is **only documented flood locations**; there is no symmetric negative class, so comparison to a 50% “coin flip” is not applicable. Declining recall at tighter buffers (e.g., 11% at 100 m for Houston vs 89% at 1000 m) reflects **positional tolerance**, not collapse to chance performance. A proper null model is spatial (e.g., random points in the AOI or stream-proximity baseline; reviewer comment #14), whose expected hit rate depends on flood extent and buffer size and is generally **not** 50%. We report recall explicitly following common practice for **point-referenced** flood map evaluation.
+
+### Relation to reviewer comments
+
+| # | Link |
+|---|------|
+| **#3** | Finer buffers show recall **varies with B** — expected for a distance-based metric, not proof of ~50% skill |
+| **#10** | We report **recall**; precision/FAR would need a full reference map (future work) |
+| **#14** | Random/stream/FEMA baselines can be added; their expected values ≠ 50% for this recall definition |
+
+---
+
 ## Comment #8 — USGS gauge thresholds (not an inclusion filter)
 
 ### Manuscript text (template)

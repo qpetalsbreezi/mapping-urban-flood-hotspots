@@ -7,6 +7,9 @@ Events database), this script filters rows by state, county, event type, and
 optional keyword matches. The result is written to a new CSV that can be used
 as input to the imagery matcher (`match_event_imagery.py`).
 
+USGS gage filtering is not performed here; gage height is attached later in
+`code/validation/build_event_catalog.py` for supplementary metadata only.
+
 Examples:
     # Filter Wake County flood events in NC
     python code/gee/filter_noaa_events.py \

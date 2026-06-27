@@ -40,12 +40,10 @@ This document summarizes whether our evaluation process (SAR-derived flood map v
 ### 4. Circularity / bias (NOAA used twice)
 
 - **How NOAA is used:**  
-  (1) **Event selection:** We include only events that have NOAA flood reports (and USGS + Sentinel coverage).  
-  (2) **Validation:** We use NOAA report locations as the reference points.
-- **Effect:** We are **not** evaluating “did we miss events?” — we only evaluate “for events we know had reported flooding, is our SAR flood near the reported locations?” So:
-  - Hit rates can be **optimistic** in the sense that we preselected events with known flooding.
-  - We are **not** double-using NOAA to train or tune the algorithm; the flood *extent* comes only from SAR. So the circularity is **moderate** and mainly a limitation to state, not a fatal flaw.
-- **Recommendation:** In the poster/abstract, state clearly that validation is “agreement between SAR-derived flood extent and NOAA report locations for events that had both NOAA reports and Sentinel-1 coverage,” and that event set is chosen using NOAA + USGS + satellite availability.
+  (1) **Event selection:** NOAA-reported floods with coordinates in 2015–2025 define the event universe; Sentinel-1 availability splits M (map) vs N−M (independent test). USGS gage height is recorded in the event catalog but **not** used as an inclusion filter.  
+  (2) **Validation (current):** N−M NOAA report locations are scored against an ever-flooded map built from M SAR events only (see [`validation_independence.md`](validation_independence.md)).
+- **Effect:** The headline metric uses test locations that did **not** contribute to the map. NOAA still defines both screening and reference, so full independence from reports is not claimed.
+- **Recommendation:** State that validation is buffered detection recall for NOAA locations from events **without** Sentinel-1 coverage, against an ever-flooded SAR map from other events.
 
 ### 5. Standard metrics (CSI, POD, FAR)
 

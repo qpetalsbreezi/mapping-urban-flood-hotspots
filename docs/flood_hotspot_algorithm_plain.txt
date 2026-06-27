@@ -8,7 +8,7 @@ Data Sources
 
 Flood Event Data:
 - NOAA Storm Events Database - documented flood events with dates, locations, and impacts
-- USGS stream gage data - water level measurements for event validation (Crabtree Creek Station 02087324 for Raleigh, Buffalo Bayou Station 08073700 for Houston)
+- USGS stream gage data - daily gage height recorded per event for supplementary context only (Crabtree Creek Station 02087324 for Raleigh, Buffalo Bayou Station 08073700 for Houston); not used as an inclusion filter
 
 Satellite Imagery:
 - Sentinel-1 SAR (COPERNICUS/S1_GRD) - primary flood detection using VV and VH polarizations
@@ -26,9 +26,9 @@ STEP 1: Event Selection and Validation
 
 Flood events are extracted from the NOAA Storm Events Database for **2015–2025** (Sentinel-1 era). For Raleigh, events are from the city-filtered NOAA subset. For Houston, events are from the city-filtered Harris County subset. NOAA data includes event dates, locations, and documented impacts. Events before 2015 are excluded because Sentinel-1 was not operational.
 
-Events are cross-referenced with USGS stream gage data. For Raleigh, the Crabtree Creek gage (Station 02087324) must show water levels exceeding 10 feet. For Houston, the Buffalo Bayou gage (Station 08073700) must show water levels exceeding 40 feet.
+Events are selected from NOAA flood reports with coordinates in 2015-2025. USGS daily gage height on each event date is recorded in the supplementary event catalog but is not required for inclusion (no 10 ft / 40 ft gage cutoff).
 
-Events are selected if they have both NOAA documentation and USGS validation, and have available Sentinel-1 SAR imagery. This process identified 5 flood events for Raleigh and 10 flood events for Houston. Houston also includes one control event (no documented flooding) used for sanity checks; the control event is excluded from hotspot aggregation.
+Sentinel-1 SAR composites are matched to NOAA events where imagery is available; manually curated composites with valid before/after pairs are used for mapping. This process identified 5 SAR map composites for Raleigh and 10 for Houston. Houston also includes one control event (no documented flooding) used for sanity checks; the control event is excluded from hotspot aggregation. Independent validation uses NOAA locations from events without SAR coverage (N minus M).
 
 STEP 2: Satellite Imagery Matching
 

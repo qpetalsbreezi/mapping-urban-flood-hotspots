@@ -1,95 +1,83 @@
 # Flood Event Selection Methodology
 
 ## Overview
-This document describes the process used to select flood events for flood hotspot analysis in two cities: **Raleigh, North Carolina** and **Houston, Texas**. The **study period is 2015–2025**, aligned with Sentinel‑1 availability (operational from late 2014).
+
+This document describes how flood events are selected for hotspot mapping and validation in **Raleigh, North Carolina** and **Houston, Texas**. The **study period is 2015–2025**, aligned with Sentinel‑1 availability (operational from late 2014).
+
+**Inclusion rule:** NOAA-reported urban flood events with coordinates in the study period. **USGS gauge levels are not used as a filter** (see [USGS role](#usgs-stream-gauge-role) below).
 
 ## Data Sources
 
 ### Raleigh, North Carolina
-- **NOAA Storm Event Database**: Wake County flood events, **2015–2025** (city-filtered Raleigh subset: 49 events with coordinates)
-- **NOAA Raleigh-Specific Events**: Events mentioning Raleigh in the filtered CSV
-- **USGS Station 02087324**: Daily water level data for Crabtree Creek at US 1, Raleigh (**2015–2025** analysis window)
+- **NOAA Storm Event Database**: Wake County flood events filtered for the Raleigh area (`noaa_raleigh_flood_events.csv`)
+- **USGS Station 02087324**: Daily gage height for Crabtree Creek at US 1, Raleigh (supplementary metadata only)
 
 ### Houston, Texas
-- **NOAA Storm Event Database**: Harris County flood events, **2015–2025** (city-filtered Houston subset: 55 events with coordinates)
-- **USGS Station 08073700**: Daily water level data for Buffalo Bayou at Piney Point, TX (**2015–2025** analysis window)
+- **NOAA Storm Event Database**: Harris County flood events filtered for Houston (`noaa_houston_flood_events.csv`)
+- **USGS Station 08073700**: Daily gage height for Buffalo Bayou at Piney Point, TX (supplementary metadata only)
 
 ## Selection Criteria
 
-### Step 1: NOAA Event Identification
-- **Raleigh**: Filtered NOAA data for events mentioning "Raleigh" in location or impact descriptions
-- **Houston**: Collected all Harris County flood events from NOAA database
+### Step 1: NOAA event identification
 
-### Step 2: USGS Water Level Analysis
-- **Raleigh**: Analyzed daily gage height data (**2015–2025**), identified events >10 feet
-- **Houston**: Analyzed daily gage height data (**2015–2025**), identified events >40 feet
+Automated filter via `code/event_selection/filter_noaa_events.py`:
 
-### Step 3: Cross-Reference Validation
-Events were selected only if they met ALL of the following criteria:
-1. **NOAA reported flooding** with documented impacts
-2. **USGS recorded high water levels** at monitoring stations
-3. **Significant impact** documented (evacuations, damage, road closures, rescues)
+| City | NOAA filter |
+|------|-------------|
+| **Raleigh** | North Carolina, Wake County, Flash Flood / Flood event types; keywords matching Raleigh area |
+| **Houston** | Texas, Harris County, Flash Flood / Flood event types; keywords matching Houston |
 
-## Selected Events Summary
+This produces the raw event CSVs used by the imagery matcher and validation scripts. **No USGS join is applied.**
 
-### Raleigh, North Carolina
-**Total events identified**: 15 flood events
-- **Events with Sentinel coverage**: 9 events (2016-2018)
-- **Water level range**: 10.50-16.57 feet
-- **Geographic area**: Raleigh/Crabtree Creek
+### Step 2: Study-period and coordinate filter
 
-#### Major Events with Sentinel Coverage (9 events)
-- 2016-07-16: 14.41 ft - Water rescues, $250K damage
-- 2016-07-17: 15.24 ft - 10+ hours over flood stage
-- 2017-04-25: 16.57 ft - Road closures, major flooding
-- 2018-05-21: 12.37 ft - Crabtree Valley Mall, $600K damage
-- 2018-05-22: 12.49 ft - Newton Road collapsed
-- 2018-07-06: 10.50 ft - Multiple water rescues
-- 2018-08-20: 13.42 ft - Multiple rescues, $80K damage
-- 2018-11-13: 13.77 ft - Water rescues
+For mapping and validation (`build_independent_validation.py`, `build_event_catalog.py`):
 
-### Houston, Texas
-**Total events identified**: 9 major flood events
-- **Events with Sentinel coverage**: 9 events (ALL with coverage)
-- **Water level range**: 40.20-53.12 feet
-- **Geographic area**: Harris County/Buffalo Bayou
+1. Event date in **2015–2025**
+2. Valid **BEGIN_LAT** / **BEGIN_LON**
 
-#### Major Events (9 events)
-- 2015-05-26: 53.12 ft - Memorial Day Flood, $25M damage, 2,585 homes flooded, 6 fatalities
-- 2016-04-18: 40.20 ft - Tax Day Flood, $35M damage, 10,000 homes flooded, 7 fatalities
-- 2017-08-26-29: 45-49 ft - Hurricane Harvey (4 days), catastrophic flooding
-- 2018-07-04: 41.50 ft - July 4th Flood
-- 2019-09-18-19: 43-44 ft - Tropical Storm Imelda, $200M damage
+Events missing coordinates are excluded from analysis but listed in the event catalog with reason `excluded_no_coordinates`.
 
-## Why These Events?
-These events represent the best candidates for flood hotspot analysis because they:
-- Have both official flood reports (NOAA) and measured water levels (USGS)
-- Document significant urban impacts suitable for remote sensing analysis
-- Provide comprehensive temporal coverage (2015-2019)
-- **24 total events with full Sentinel satellite coverage across both cities**
-- Enable comparison between different geographic and climatic regions
+### Step 3: SAR availability (defines M vs N−M)
 
-## Key Findings
+| Group | Definition | Role |
+|-------|------------|------|
+| **N** | All NOAA events passing Steps 1–2 | Event universe |
+| **M** | Subset with usable Sentinel‑1 before/after pairs | Build ever‑flooded map |
+| **N − M** | NOAA floods without SAR coverage | Independent validation locations |
 
-### Combined Analysis
-- **Total events identified**: 24 flood events across both cities
-- **Events with Sentinel coverage**: 18 events (75% of all events)
-- **Geographic diversity**: Southeast (Raleigh) and Gulf Coast (Houston)
-- **Climate diversity**: Inland creek flooding vs. tropical storm flooding
-- **Impact range**: From localized urban flooding to catastrophic regional events
+SAR composites included in the final GEE map are **manually curated** from the imagery-matching pipeline (see `validation_split.json` and `generate_flood_hotspots_gee_upload.js`).
 
-### Water Level Comparison
-- **Raleigh**: 10.50-16.57 feet (inland creek system)
-- **Houston**: 40.20-53.12 feet (major bayou system)
-- **Ratio**: Houston water levels ~3x higher than Raleigh
+## USGS stream gauge role
 
-### Impact Severity
-- **Raleigh**: Urban infrastructure damage, evacuations
-- **Houston**: Catastrophic flooding, major evacuations, fatalities
+USGS data is **not** an inclusion criterion in the current pipeline.
 
-## Next Steps
-- Verify actual Sentinel-1 SAR and Sentinel-2 optical data availability for all 18 events
-- Check cloud cover for optical imagery
-- Download qualifying scenes for flood mapping analysis
-- Proceed with hotspot analysis using 18 events (excellent sample size for robust analysis)
-- Compare flood patterns between the two cities
+- **Early project work (Oct 2025):** A manual cross-reference identified ~15 Raleigh and ~9 Houston events where NOAA reports coincided with high gage readings (historically >10 ft Crabtree Creek, >40 ft Buffalo Bayou). That curated list was replaced in Dec 2025 by the broader NOAA-only filter above.
+- **Current practice:** Daily gage height on each event date is recorded in [`data/processed/event_catalog_2015_2025.csv`](../data/processed/event_catalog_2015_2025.csv) for context. Columns `usgs_gage_ft_on_event_date` and `usgs_exceeds_city_threshold` are **informational** (legacy reference levels: 10 ft Raleigh, 40 ft Houston)—they do **not** determine whether an event is included.
+
+**Why not filter on gauge?** NOAA report locations capture localized street and creek flooding that may not align with a single downstream gage on the event date; requiring arbitrary gage cutoffs would shrink the validation set without improving reproducibility (reviewer comment **#8**).
+
+## Event counts (2015–2025, with coordinates)
+
+| City | N (total) | N−M (independent test) | SAR in GEE map |
+|------|-----------|------------------------|----------------|
+| **Raleigh** | 49 | 37 | 5 composites |
+| **Houston** | 55 | 29 | 10 composites (+ 1 control, excluded from map) |
+
+Regenerate counts and catalogs:
+
+```bash
+python3 code/validation/build_independent_validation.py
+python3 code/validation/build_event_catalog.py
+```
+
+## Reproducibility
+
+| Script | Output |
+|--------|--------|
+| `filter_noaa_events.py` | `data/raw/{city}/event_detection/noaa_{city}_flood_events.csv` |
+| `match_event_imagery.py` | `event_imagery_matches.csv` (Sentinel‑1/2 pairing) |
+| `build_independent_validation.py` | `validation_split.json`, GEE validation locations |
+| `build_event_catalog.py` | `event_catalog_2015_2025.csv` (full event table) |
+
+See also: [`validation_independence.md`](validation_independence.md), [`paper_reviewer_comment_changes.md`](paper_reviewer_comment_changes.md).

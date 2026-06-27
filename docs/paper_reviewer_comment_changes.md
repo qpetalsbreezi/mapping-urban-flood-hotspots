@@ -5,8 +5,8 @@ Point-by-point responses for manuscript revision. Use the **progress table** bel
 ### Instructions for paper-integration agent
 
 1. **In paper (#6, #13, #15)** — Already applied to the manuscript. Do not re-insert; use those sections only as reference.
-2. **Needs paper (#1, #2, #3, #8, #9, #10, #18)** — Copy the **Manuscript / rebuttal text** and tables from each comment section (and **Appendix B** for Results). Content below is ready to integrate.
-3. **Not done (#4, #5, #14, #16, #17)** — Placeholders only. When analysis or drafting is completed in this repo, the corresponding **Comment #** section will be expanded with **What we did**, numbers, and **Manuscript / rebuttal text** — integrate at that time.
+2. **Needs paper** — Copy **Manuscript / rebuttal text** from each comment section marked **Needs paper** in the progress table (and **Appendix B** for Results).
+3. **Not done (#4, #14, #16, #17)** — Placeholders only until expanded in this doc.
 4. **Do not** restore old headline metrics (88.9% accuracy, circular validation design).
 
 ### Progress legend
@@ -28,7 +28,7 @@ Point-by-point responses for manuscript revision. Use the **progress table** bel
 | **2** | Threshold overfitting | **Addressed** | **Needs paper** |
 | **3** | Buffer distance; “coin flip” | **Addressed** | **Needs paper** |
 | **4** | No FEMA / baseline comparison | Not done | Not done |
-| **5** | Urban SAR limits understated | Not done | Not done |
+| **5** | Urban SAR limits understated | **Addressed** — discussion draft | **Needs paper** |
 | **6** | Unsupported “local knowledge” claims | **Addressed** | **In paper** |
 | **7** | Weak control event | **Partial** — one control documented | **Needs paper** |
 | **8** | Arbitrary USGS gauge thresholds | **Addressed** | **Needs paper** |
@@ -43,7 +43,7 @@ Point-by-point responses for manuscript revision. Use the **progress table** bel
 | **17** | Limited statistics | Not done | Not done |
 | **18** | Study period; event table | **Addressed** | **Needs paper** |
 
-**Summary:** **3 in paper** (#6, #13, #15) · **10 need paper** (#1–#3, #7–#12, #18) · **5 not done** (#4, #5, #14, #16, #17)
+**Summary:** **3 in paper** (#6, #13, #15) · **11 need paper** (#1–#3, #5, #7–#12, #18) · **4 not done** (#4, #14, #16, #17)
 
 ---
 
@@ -150,11 +150,50 @@ We report **buffered detection recall** on **known flood report points only**:
 
 **Reviewer concern:** Double-bounce, lack of coherence/polarimetry baseline; urban SAR limitations under-discussed.
 
-**Status:** Not done · **Future — expand this section when analysis is ready**
+**Status:** **Addressed** (repo) · **Needs paper**
 
-### Planned response (when addressed)
+### What the method actually does (accurate to code)
 
-> Expand Discussion on SAR limits in urban areas; cite double-bounce and mixed land-cover effects; note validation uses pre-urban ever-flooded layer for point recall.
+Our pipeline uses **C-band Sentinel-1 GRD** (VV primary; VH when both scenes have it) and **change detection** (after − before, dB), not coherence, InSAR, or polarimetric decomposition.
+
+| Layer / step | Urban-related behavior |
+|--------------|------------------------|
+| **Hotspot frequency map** | Flood pixels **masked to urban/built-up**: ESA WorldCover class 50 **or** NLCD ≥20% impervious |
+| **Independent validation (ever-flooded map)** | Uses **pre-urban** mask: same threshold + speckle filter + permanent-water exclusion, **without** urban mask — intentionally more generous for point recall |
+| **Permanent water** | JRC Global Surface Water ≥50% occurrence excluded |
+| **Speckle** | 90 m focal smoothing; ≥5 connected pixels retained |
+| **What we do not use** | Coherence, PolSAR, street-scale DEM hydraulics, building-level inundation models |
+
+Urban environments introduce **volume scattering, double-bounce, layover, and shadow** that can mimic or obscure real water signals in C-band SAR. We do **not** claim street-level or building-footprint inundation mapping.
+
+### What we did not change
+
+- No new urban-specific threshold or polarimetric processing (out of scope for this revision).
+- Headline validation remains **buffered detection recall** at NOAA points — appropriate for a **hotspot / extent** product, not sub-meter urban flood depth.
+
+### Manuscript / rebuttal text — Discussion (template)
+
+> Sentinel-1 C-band backscatter change detection is less reliable in dense urban settings than over open water or rural floodplains. In cities, corner reflectors, roads, and building geometry produce **layover, shadow, and double-bounce** effects that can complicate interpretation of VV/VH decreases as inundation. Our approach does not use **interferometric coherence** or **polarimetric decomposition**, which can improve discrimination in complex scenes but require different data products and processing chains. We therefore treat SAR outputs as **regional flood-extent indicators** rather than parcel- or street-level inundation maps.
+>
+> Operationally, we apply an **urban mask** (WorldCover built-up or NLCD ≥20% impervious) when aggregating **hotspot frequency** maps so that recurring detections are summarized over developed land. For **independent validation**, we score NOAA report locations against a **pre-urban ever-flooded layer** (same detection thresholds and speckle filtering, but without restricting to the urban mask) so that agreement is not artificially reduced by masking out pixels near report coordinates. Even with this design, fine-buffer recall remains limited in Houston (11% at 100 m), consistent with positional uncertainty in NOAA reports and the spatial scale of bayou-aligned SAR detections relative to dispersed urban report points.
+>
+> We do not claim that SAR alone can resolve flood **depth**, **velocity**, or interior building flooding (**#13**). Hotspot maps should be interpreted as **where open-channel and surface flooding was repeatedly detectable from Sentinel-1** under our observation windows, not as a substitute for high-resolution lidar, municipal stormwater models, or field surveys.
+
+### Manuscript / rebuttal text — Methods (optional short paragraph)
+
+> Flood masks were derived from Sentinel-1 GRD VV (and VH when available) using pre/post change thresholds (−1.8 dB dual-pol, −2.0 dB VV-only). Hotspot frequency was computed over an urban mask (WorldCover built-up or NLCD impervious ≥20%). Validation used a pre-urban ever-flooded union so that recall was not evaluated only within the urban mask.
+
+### Suggested citations (paper agent: verify and match your bibliography)
+
+- Standard SAR flood mapping / urban limitation reviews (e.g., Sentinel-1 change detection for floods; urban microwave backscatter challenges). Replace with refs already in your manuscript where possible, or add one widely cited SAR inundation review.
+
+### Relation to other comments
+
+| # | Link |
+|---|------|
+| **#3** | Fine-buffer recall limits consistent with urban scale mismatch, not proof of method failure |
+| **#10** | Point recall only; no pixel IoU in urban canyons |
+| **#13** | Extent only, not depth — cross-reference in same Discussion subsection |
 
 ---
 
@@ -448,6 +487,7 @@ GEE composite IDs are authoritative for map roles (`generate_flood_hotspots_gee_
 
 ## Appendix C — Limitations (Discussion)
 
+- Urban SAR limits: layover, double-bounce; no coherence/PolSAR (**#5** — draft in comment section).
 - NOAA remains the spatial reference (**#1**); not FEMA or aerial imagery for headline metric (**#4**).
 - USGS gage not used to filter events (**#8**); single station may not reflect local report locations.
 - 100 m recall limited, especially Houston (**#3**).

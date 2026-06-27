@@ -1,13 +1,40 @@
 # Paper Changes for Reviewer Comments
 
-Point-by-point responses for manuscript revision. Use the **progress table** below, then jump to each **Comment #** section for detail and draft text.
+**Single source of truth for the paper-integration agent.** All numbers, tables, and draft text are in this file.
 
 ### Instructions for paper-integration agent
 
-1. **In paper (#6, #13, #15)** — Already applied to the manuscript. Do not re-insert; use those sections only as reference.
-2. **Needs paper** — Copy **Manuscript / rebuttal text** from each comment section marked **Needs paper** in the progress table (**Appendix B** for Results; **Appendix E** / Comment **#14** for Table SX; Comment **#4** for FEMA baseline).
-3. **Not done (#16)** — Citation audit (manuscript only).
-4. **Do not** restore old headline metrics (88.9% accuracy, circular validation design).
+**You do not need to run code, open GEE, read other repo docs, or wait on another agent.**
+
+#### Your tasks
+
+1. **Skip (already in manuscript):** #6, #13, #15 — do not re-insert.
+2. **Insert from this doc:** #1–#5, #7–#12, #14, #17, #18 — copy **Manuscript / rebuttal text** and tables from each section.
+3. **Bulk paste from appendices:**
+   - **Appendix B** — Results paragraph
+   - **Appendix C** — Limitations
+   - **Appendix E** — Table SX (random baseline)
+   - **Appendix F** — Table SY (recall + Wilson 95% CI)
+   - **Appendix G** — Table SZ (FEMA point baseline)
+4. **Citation audit (#16)** — manuscript only; see Comment #16 section.
+5. **Do not** restore 88.9% accuracy or the old circular validation design.
+
+#### Sample-size note (use consistently)
+
+| Metric | Raleigh n | Houston n | Notes |
+|--------|-----------|-----------|-------|
+| Buffered recall (#3, #14, #17) | 36 | 28 | N−M points inside GEE focus AOI |
+| FEMA point-in-SFHA (#4) | 37 | 29 | Full N−M catalog with coordinates |
+| Event catalog (#18) | 49 total, 37 N−M | 55 total, 29 N−M | Table S1 |
+
+#### Repo “Partial” vs your work
+
+Comments #1, #7, #9, #10 show **Partial** in repo because limitations are acknowledged — **draft manuscript text below is still complete and ready to paste.**
+
+#### Skip for manuscript
+
+- GEE FEMA pixel area overlap — not required (Table SZ is sufficient).
+- Appendix D — repo reproducibility only.
 
 ### Progress legend
 
@@ -39,11 +66,11 @@ Point-by-point responses for manuscript revision. Use the **progress table** bel
 | **13** | No flood depth / severity | **Addressed** | **In paper** |
 | **14** | No random / simple baselines | **Addressed** — random-point baseline | **Needs paper** |
 | **15** | Title and terminology | **Addressed** | **In paper** |
-| **16** | Citation accuracy | Not done | Not done |
+| **16** | Citation accuracy | Not done | **Paper agent task** |
 | **17** | Limited statistics | **Addressed** — Wilson 95% CIs | **Needs paper** |
 | **18** | Study period; event table | **Addressed** | **Needs paper** |
 
-**Summary:** **3 in paper** (#6, #13, #15) · **14 need paper** (#1–#4, #5, #7–#12, #14, #17, #18) · **1 not done** (#16)
+**Summary:** **3 in paper** (#6, #13, #15) · **14 need paper** (#1–#5, #7–#12, #14, #17, #18) · **1 paper-agent task** (#16 citations)
 
 ---
 
@@ -59,14 +86,14 @@ Point-by-point responses for manuscript revision. Use the **progress table** bel
 - **Test (N−M):** NOAA locations from events **without** SAR — never used to build the map.
 - **Cities independent:** Raleigh thresholds not tuned on Houston data (and vice versa).
 
-See [`validation_independence.md`](validation_independence.md).
+**Design in one sentence:** Map = SAR events (M); test = NOAA events without SAR (N−M); cities processed separately.
 
-### What remains
+### What remains (state in Limitations)
 
 - NOAA still defines the **event universe** and the **spatial reference** (not FEMA, aerial imagery, or road closures).
 - Threshold tuning on M train events still uses NOAA point locations.
 
-### Manuscript / rebuttal text (template)
+### Manuscript / rebuttal text
 
 > We revised validation to reduce circularity. The ever-flooded map aggregates SAR detections from M events (Sentinel-1 coverage only). Independent test locations come from N−M events that did not contribute to the map. We no longer report the prior 88.9% aggregate figure, which mixed map-building and test events. NOAA remains the point reference for both screening and validation; fully independent ground truth (e.g., aerial imagery) is noted as future work.
 
@@ -89,9 +116,9 @@ See [`validation_independence.md`](validation_independence.md).
 | Raleigh | `755610`, `775029_and_1_more` |
 | Houston | `579534`, `675235_and_1_more`, `710731`, `830461_and_1_more` |
 
-Config: [`data/processed/validation_split.json`](../data/processed/validation_split.json)
+Config reference (optional): `data/processed/validation_split.json`
 
-### Manuscript / rebuttal text (template)
+### Manuscript / rebuttal text
 
 > Detection thresholds were selected using a training subset of M events per city, then locked before constructing the ever-flooded map and before independent validation. Adaptive per-scene thresholds were disabled for evaluation. Raleigh and Houston thresholds were tuned independently.
 
@@ -136,9 +163,9 @@ We report **buffered detection recall** on **known flood report points only**:
 | 500 m | 89% vs 33% | 61% vs 41% |
 | 1000 m | 100% vs 63% | 89% vs 70% |
 
-### Manuscript / rebuttal text (template)
+### Manuscript / rebuttal text
 
-> We report buffered detection recall at 100–1000 m for independent NOAA locations (N−M events). This is not overall classification accuracy; the denominator contains only documented flood locations, so comparison to a 50% coin flip is not applicable. Recall increases with buffer distance as expected for a distance-tolerance metric. We replaced the prior single 1 km “accuracy” figure with this multi-buffer recall table. A random-point spatial null (500 points per city, seed 42) yielded hit rates of 6–63% (Raleigh) and 13–70% (Houston) at the same buffers — well below NOAA recall at most distances (**#14**), confirming that mid- and coarse-buffer performance is not explained by chance placement in the AOI.
+> We report buffered detection recall at 100–1000 m for independent NOAA locations (N−M events). This is not overall classification accuracy; the denominator contains only documented flood locations, so comparison to a 50% coin flip is not applicable. Recall increases with buffer distance as expected for a distance-tolerance metric. We replaced the prior single 1 km “accuracy” figure with this multi-buffer recall table. A random-point spatial null (500 points per city, seed 42) yielded hit rates of 6–63% (Raleigh) and 13–70% (Houston) at the same buffers — well below NOAA recall at most distances (Table SX), confirming that mid- and coarse-buffer performance is not explained by chance placement in the AOI.
 
 ---
 
@@ -150,36 +177,18 @@ We report **buffered detection recall** on **known flood report points only**:
 
 **Minimal scope:** FEMA NFHL **Special Flood Hazard Area (SFHA)** comparison as **supplement only** — headline validation remains NOAA N−M recall (**#1**, **#3**).
 
-### What we did
+### What we did (analysis complete — use table below in paper)
 
-1. **Point context (Python, reproducible)** — `code/validation/compute_fema_overlap.py` fetches FEMA NFHL layer 28 (SFHA) for each city AOI and reports how many **independent N−M NOAA points** fall inside mapped SFHA.
+FEMA NFHL **Special Flood Hazard Area (SFHA)** comparison as **supplement only** — headline validation remains NOAA N−M recall.
 
-```bash
-python3 code/validation/compute_fema_overlap.py
-```
-
-Output: `data/processed/fema_overlap.json` (cached polygons: `data/external/nfhl_{city}_sfha.geojson`).
-
-2. **Pixel overlap (GEE, optional supplement)** — `generate_flood_hotspots.js` can report **% of ever-flooded SAR area** inside vs outside FEMA SFHA if NFHL geojson is uploaded to Earth Engine Assets (`FEMA_NFHL_ASSETS`). Not required for the headline #4 rebuttal; point-in-SFHA results above are sufficient.
-
-### Results — N−M NOAA points in FEMA SFHA
+**Results — N−M NOAA points in FEMA SFHA** (also **Appendix G**):
 
 | City | N−M points | Inside FEMA SFHA | Outside SFHA |
 |------|------------|------------------|--------------|
 | Raleigh | 37 | 4 (**10.8%**) | 33 (**89.2%**) |
 | Houston | 29 | 10 (**34.5%**) | 19 (**65.5%**) |
 
-Most independent urban flood reports lie **outside** FEMA SFHA in both cities — especially Raleigh (~89% outside). SAR-detected recurring flood areas therefore capture **observed flood reports beyond regulatory floodplain maps**, consistent with a complementary (not redundant) product. This is contextual baseline evidence, not a replacement for NOAA recall.
-
-### GEE area overlap (optional supplement)
-
-Upload `data/external/nfhl_raleigh_sfha.geojson` (and Houston) to EE Assets, set `FEMA_NFHL_ASSETS`, re-run script if pixel-level overlap percentages are desired:
-
-```
-FEMA NFHL overlap — ever-flooded SAR vs SFHA (#4, supplement):
-  SAR ever-flooded area in FEMA SFHA: XX%
-  SAR ever-flooded area outside FEMA SFHA: YY%
-```
+Most independent urban flood reports lie **outside** FEMA SFHA in both cities — especially Raleigh (~89% outside). SAR complements regulatory floodplain maps; this is not the headline validation metric.
 
 ### Manuscript / rebuttal text
 
@@ -217,7 +226,7 @@ Urban environments introduce **volume scattering, double-bounce, layover, and sh
 - No new urban-specific threshold or polarimetric processing (out of scope for this revision).
 - Headline validation remains **buffered detection recall** at NOAA points — appropriate for a **hotspot / extent** product, not sub-meter urban flood depth.
 
-### Manuscript / rebuttal text — Discussion (template)
+### Manuscript / rebuttal text — Discussion
 
 > Sentinel-1 C-band backscatter change detection is less reliable in dense urban settings than over open water or rural floodplains. In cities, corner reflectors, roads, and building geometry produce **layover, shadow, and double-bounce** effects that can complicate interpretation of VV/VH decreases as inundation. Our approach does not use **interferometric coherence** or **polarimetric decomposition**, which can improve discrimination in complex scenes but require different data products and processing chains. We therefore treat SAR outputs as **regional flood-extent indicators** rather than parcel- or street-level inundation maps.
 >
@@ -229,9 +238,9 @@ Urban environments introduce **volume scattering, double-bounce, layover, and sh
 
 > Flood masks were derived from Sentinel-1 GRD VV (and VH when available) using pre/post change thresholds (−1.8 dB dual-pol, −2.0 dB VV-only). Hotspot frequency was computed over an urban mask (WorldCover built-up or NLCD impervious ≥20%). Validation used a pre-urban ever-flooded union so that recall was not evaluated only within the urban mask.
 
-### Suggested citations (paper agent: verify and match your bibliography)
+### Suggested citations
 
-- Standard SAR flood mapping / urban limitation reviews (e.g., Sentinel-1 change detection for floods; urban microwave backscatter challenges). Replace with refs already in your manuscript where possible, or add one widely cited SAR inundation review.
+Use refs already in the manuscript where possible, or add one widely cited Sentinel-1 urban flood / SAR limitation review.
 
 ### Relation to other comments
 
@@ -273,7 +282,7 @@ Urban environments introduce **volume scattering, double-bounce, layover, and sh
 
 - A single control cannot support robust false-alarm statistics; expanding controls is future work.
 
-### Manuscript / rebuttal text (template)
+### Manuscript / rebuttal text
 
 > As a qualitative sanity check, we include one Houston non-flood Sentinel-1 pair (15 October 2024) with no corresponding NOAA flood report and below-threshold streamflow (Table S1). This control is viewable in the single-event workflow but is excluded from ever-flooded and hotspot maps. We do not derive false-positive rates from a single control date; formal commission-error metrics would require additional non-flood observations or a full reference inundation layer.
 
@@ -288,16 +297,14 @@ Urban environments introduce **volume scattering, double-bounce, layover, and sh
 ### What we did
 
 - **Inclusion:** NOAA floods with coordinates, **2015–2025** — **no gage filter**.
-- USGS recorded in event catalog as **metadata only** (legacy 10 ft / 40 ft flags are informational).
-
-See [`event_selection_methodology.md`](event_selection_methodology.md).
+- USGS recorded in event catalog as **metadata only** (legacy 10 ft / 40 ft flags are informational, not filters).
 
 | Original claim | Current practice |
 |----------------|------------------|
 | Events required NOAA **and** USGS >10 ft / >40 ft | **NOAA + coordinates only** |
 | ~15 Raleigh / ~9 Houston “major” floods | **49 / 55** events (2015–2025) |
 
-### Manuscript / rebuttal text (template)
+### Manuscript / rebuttal text
 
 > The event universe consists of NOAA-reported urban flood events with coordinates during 2015–2025. USGS daily gage height at Crabtree Creek (Raleigh) and Buffalo Bayou (Houston) was recorded per event in the supplementary catalog but was not used as an inclusion criterion. Sentinel-1 availability determines map (M) versus independent test (N−M) roles.
 
@@ -311,9 +318,10 @@ See [`event_selection_methodology.md`](event_selection_methodology.md).
 
 ### What we did
 
-- Pre/post lags and S1 image IDs documented per event in [`event_catalog_2015_2025.csv`](../data/processed/event_catalog_2015_2025.csv).
+- Pre/post lags and S1 image IDs are in supplementary **Table S1** (`event_catalog_2015_2025.csv` in repo).
+- Windows: **30-day pre-event**, **2-day post-event**, same relative orbit.
 
-### Manuscript / rebuttal text (template)
+### Manuscript / rebuttal text
 
 > Sentinel-1 pairs were selected within a 30-day pre- and 2-day post-event window (same relative orbit). Event-level pre/post dates and lag days are listed in Table S1. We acknowledge that very rapid flash floods may fall outside ideal observation windows; this is stated as a limitation.
 
@@ -335,7 +343,7 @@ See [`event_selection_methodology.md`](event_selection_methodology.md).
 - **Precision / FAR** need a full reference inundation map or negative point sample.
 - **IoU** needs pixel-wise reference, not point-only NOAA.
 
-### Manuscript / rebuttal text (template)
+### Manuscript / rebuttal text
 
 > We report buffered detection recall for independent NOAA flood locations, following common practice for point-referenced flood map evaluation. Pixel-wise precision, false-alarm rate, and IoU require a complete reference inundation layer and are left for future work with aerial or survey data.
 
@@ -349,22 +357,19 @@ See [`event_selection_methodology.md`](event_selection_methodology.md).
 
 ### What we did
 
-Documented in [`event_catalog_sar_composites_2015_2025.csv`](../data/processed/event_catalog_sar_composites_2015_2025.csv) (`study_role = control_sar_no_flood`):
+Documented for **Table S1** (Houston control row):
 
 | Field | Value |
 |-------|--------|
 | **Composite ID** | `control_2024-10-15` |
 | **City** | Houston |
 | **Reference date** | 2024-10-15 |
-| **NOAA flood report** | None (`noaa_event_ids = none`) |
-| **USGS Buffalo Bayou (08073700)** | **27.87 ft** on 2024-10-15 (legacy 40 ft reference — not used as filter) |
-| **S1 before / after** | 2024-10-03 / 2024-10-15 (12-day pre, 0-day post lag) |
+| **NOAA flood report** | None |
+| **USGS Buffalo Bayou (08073700)** | **27.87 ft** on 2024-10-15 (metadata only) |
+| **S1 before / after** | 2024-10-03 / 2024-10-15 |
 | **In ever-flooded / hotspot map** | **No** |
-| **Purpose** | Visual sanity check in `visualize_flood_events.js` |
 
-Regenerate catalog: `python3 code/validation/build_event_catalog.py`
-
-### Manuscript / rebuttal text (template)
+### Manuscript / rebuttal text
 
 > Table S1 includes a documented non-flood control for Houston (composite `control_2024-10-15`, 15 October 2024): Sentinel-1 before/after images on 3 and 15 October 2024, no NOAA flood entry on that date, and Buffalo Bayou gage height 27.87 ft. This pair was excluded from ever-flooded and hotspot aggregation and is used only for qualitative inspection of detections under non-flood conditions.
 
@@ -399,7 +404,7 @@ Hotspot **frequency** counts how many **mapped** SAR events flooded each pixel. 
 
 Gaps (e.g., Raleigh 2019–2021, 2023) mean **zero** frequency contribution in those years — not proof of no flooding. The **ever-flooded** validation layer and **N−M** NOAA test use the full 2015–2025 report catalog (Table S1), not the frequency map alone.
 
-### Manuscript / rebuttal text (template)
+### Manuscript / rebuttal text
 
 > Hotspot frequency reflects the number of **Sentinel-1-observed** flood events at each pixel, not the total number of NOAA-reported floods. Mapped events are irregularly spaced in time (Table S1): for example, Raleigh map composites fall in 2018, 2022, and 2024, while Houston includes clusters in 2017 (including Hurricane Harvey) and 2019. We therefore interpret frequency as “recurrence under observable SAR conditions” rather than a complete historical count. Independent validation uses all N−M NOAA report locations (2015–2025), separate from the frequency product.
 
@@ -425,15 +430,12 @@ Gaps (e.g., Raleigh 2019–2021, 2023) mean **zero** frequency contribution in t
 
 **Minimal scope:** Random-point baseline only (no stream-buffer or FEMA overlap in this revision; see **#4** for FEMA).
 
-### What we did
+### What we did (results below — paste into paper)
 
-- Added **random-point spatial null** to `generate_flood_hotspots.js` (and upload bundle).
-- **Sampling:** 500 points uniformly within each city AOI (`ee.FeatureCollection.randomPoints`, `seed=42`).
-- **Scoring:** Same buffered hit-rate metric as N−M validation — pre-urban **ever-flooded map**, buffers 100 / 250 / 500 / 1000 m.
-- **Implementation:** Flood mask dilated by buffer (`focal_max`, meters), then `sampleRegions` at each point (equivalent to per-point buffer + max, but stable for 500 points in GEE).
-- **GEE run:** `selectedCity` = `raleigh` or `houston`; load `independent_validation_locations.js`; console block `BASELINE — random points in AOI`.
+- Random-point spatial null: **500** points per city, **seed 42**, same buffers as validation.
+- Compared to independent N−M NOAA recall on pre-urban ever-flooded map.
 
-### GEE console output (2025 runs)
+### GEE console output (reference — numbers already in tables)
 
 **Raleigh** (`seed=42`, n=500):
 
@@ -506,11 +508,17 @@ Gaps (e.g., Raleigh 2019–2021, 2023) mean **zero** frequency contribution in t
 
 **Reviewer concern:** Some citations do not support claims made.
 
-**Status:** Not done · **Future — expand this section when analysis is ready**
+**Status:** **Not done** — **paper-integration agent task** (no repo dependency)
 
-### Planned response (when addressed)
+### What to do
 
-> Audit each citation against claim; remove or replace unsupported references.
+1. For each in-text citation, confirm the source supports the specific claim (method, statistic, or general statement).
+2. Remove or replace citations that overclaim (especially SAR capability, validation strength, or “multi-sensor” claims already fixed in #15).
+3. Ensure Table S1 / validation citations point to NOAA, FEMA NFHL, Sentinel-1, and USGS metadata descriptions in Methods — not unsourced “local knowledge.”
+
+### Suggested rebuttal sentence (if needed)
+
+> We audited references against claims and removed or replaced citations that did not directly support the associated statements.
 
 ---
 
@@ -524,12 +532,8 @@ Gaps (e.g., Raleigh 2019–2021, 2023) mean **zero** frequency contribution in t
 
 ### What we did
 
-- All recall values reported as **hits/total** (already in **#3**, **#14**, Appendix B).
-- **Wilson 95% confidence intervals** on independent N−M recall (`code/validation/compute_recall_ci.py` → `data/processed/recall_with_ci.json`).
-
-```bash
-python3 code/validation/compute_recall_ci.py
-```
+- All recall values reported as **hits/total** (Tables in **#3**, **Appendix E**, **Appendix F**).
+- **Wilson 95% confidence intervals** on independent N−M recall (table below and **Appendix F**).
 
 ### Results — independent N−M recall with 95% CI (Wilson)
 
@@ -554,7 +558,7 @@ We report **buffered detection recall** at fixed tolerances (100–1000 m), not 
 
 ### Manuscript / rebuttal text
 
-> Independent validation recall is reported with exact hit counts and **Wilson 95% confidence intervals** (supplement table). For Raleigh (n = 36), 500 m recall was 89% (32/36; 95% CI 75–96%). For Houston (n = 28), 500 m recall was 61% (17/28; 95% CI 42–76%). We evaluate agreement at fixed spatial buffers rather than reporting mean geolocation error; recall increases with buffer width as expected when NOAA points have positional uncertainty (**#3**).
+> Independent validation recall is reported with exact hit counts and **Wilson 95% confidence intervals** (Table SY). For Raleigh (n = 36), 500 m recall was 89% (32/36; 95% CI 75–96%). For Houston (n = 28), 500 m recall was 61% (17/28; 95% CI 42–76%). We evaluate agreement at fixed spatial buffers rather than reporting mean geolocation error; recall increases with buffer width as expected when NOAA points have positional uncertainty.
 
 ---
 
@@ -567,16 +571,12 @@ We report **buffered detection recall** at fixed tolerances (100–1000 m), not 
 ### What we did
 
 - Unified study period: **2015–2025** everywhere.
-- Reproducible catalogs via `code/validation/build_event_catalog.py`.
+- **Table S1** lists every NOAA event with coordinates, USGS gage on event date, SAR pairing when available, and study role.
 
-```bash
-python3 code/validation/build_event_catalog.py
-```
-
-| File | Contents |
+| File (repo) | Contents |
 |------|----------|
-| [`event_catalog_2015_2025.csv`](../data/processed/event_catalog_2015_2025.csv) | One row per NOAA event — study role, USGS, SAR metadata |
-| [`event_catalog_sar_composites_2015_2025.csv`](../data/processed/event_catalog_sar_composites_2015_2025.csv) | One row per S1 composite |
+| `event_catalog_2015_2025.csv` | One row per NOAA event |
+| `event_catalog_sar_composites_2015_2025.csv` | One row per S1 composite (includes Houston control) |
 
 **Event counts (with coordinates):**
 
@@ -585,11 +585,9 @@ python3 code/validation/build_event_catalog.py
 | Raleigh | 49 | 37 | 5 composites |
 | Houston | 55 | 29 | 10 composites (+ 1 control) |
 
-**`study_role` values:** `independent_validation`, `map_sar`, `map_sar_threshold_train`, `sar_matched_not_in_gee_map`, `excluded_no_coordinates`, `control_sar_no_flood` (Houston only).
+**`study_role` values (Table S1 column):** `independent_validation`, `map_sar`, `map_sar_threshold_train`, `sar_matched_not_in_gee_map`, `excluded_no_coordinates`, `control_sar_no_flood` (Houston only).
 
-GEE composite IDs are authoritative for map roles (`generate_flood_hotspots_gee_upload.js`).
-
-### Manuscript / rebuttal text (template)
+### Manuscript / rebuttal text
 
 > All analyses use 2015–2025, consistent with Sentinel-1 availability. Table S1 lists every NOAA flood report with coordinates, USGS gage on the event date, Sentinel-1 pairing when available, and each event’s role (map, threshold training, independent test, or excluded).
 
@@ -615,13 +613,11 @@ GEE composite IDs are authoritative for map roles (`generate_flood_hotspots_gee_
 
 ## Appendix B — Draft Results paragraph
 
-> Independent validation used NOAA-reported flood locations from events without Sentinel-1 coverage (N−M), which did not contribute to the ever-flooded map built from SAR events (M). Buffered detection recall increased with tolerance distance as expected. For Raleigh (n = 36), recall was 36% at 100 m, 61% at 250 m, 89% at 500 m, and 100% at 1000 m. For Houston (n = 28), recall was 11% at 100 m, 36% at 250 m, 61% at 500 m, and 89% at 1000 m. Houston's lower recall at fine buffers likely reflects the larger metropolitan AOI and greater spatial spread of report locations relative to bayou-aligned flood detections. A random-point spatial null (500 locations per city, seed 42) yielded substantially lower hit rates at most buffers (Table SX; **#14**). Detection thresholds (−1.8 dB VV+VH, −2.0 dB VV-only) were locked per city using a training subset of M events before map construction. All events are documented in a supplementary event catalog for 2015–2025 (Table S1).
+> Independent validation used NOAA-reported flood locations from events without Sentinel-1 coverage (N−M), which did not contribute to the ever-flooded map built from SAR events (M). Buffered detection recall increased with tolerance distance as expected. For Raleigh (n = 36), recall was 36% at 100 m, 61% at 250 m, 89% at 500 m, and 100% at 1000 m. For Houston (n = 28), recall was 11% at 100 m, 36% at 250 m, 61% at 500 m, and 89% at 1000 m. Houston's lower recall at fine buffers likely reflects the larger metropolitan AOI and greater spatial spread of report locations relative to bayou-aligned flood detections. A random-point spatial null (500 locations per city, seed 42) yielded substantially lower hit rates at most buffers (Table SX). Detection thresholds (−1.8 dB VV+VH, −2.0 dB VV-only) were locked per city using a training subset of M events before map construction. Wilson 95% confidence intervals are in Table SY. All events are documented in a supplementary event catalog for 2015–2025 (Table S1).
 
 ---
 
 ## Appendix E — Random-point baseline (Table SX)
-
-See **Comment #14** for method, GEE output, and rebuttal text. Use this table in the supplement:
 
 | Buffer (m) | Raleigh NOAA | Raleigh random | Houston NOAA | Houston random |
 |------------|--------------|----------------|--------------|----------------|
@@ -630,7 +626,31 @@ See **Comment #14** for method, GEE output, and rebuttal text. Use this table in
 | 500 | 89% (32/36) | 33% (165/500) | 61% (17/28) | 41% (203/500) |
 | 1000 | 100% (36/36) | 63% (315/500) | 89% (25/28) | 70% (352/500) |
 
-**Parameters:** pre-urban ever-flooded map; random points uniform in city AOI; `seed=42`; scoring via dilated flood mask + point sample (GEE `focal_max` + `sampleRegions`).
+*NOAA: N−M independent test (focus AOI). Random: 500 points, uniform AOI, seed 42, same ever-flooded map and buffered hit-rate metric.*
+
+---
+
+## Appendix F — Recall with Wilson 95% CI (Table SY)
+
+| Buffer (m) | Raleigh recall | 95% CI | Houston recall | 95% CI |
+|------------|----------------|--------|----------------|--------|
+| 100 | 36% (13/36) | 22–52% | 11% (3/28) | 4–27% |
+| 250 | 61% (22/36) | 45–75% | 36% (10/28) | 21–54% |
+| 500 | 89% (32/36) | 75–96% | 61% (17/28) | 42–76% |
+| 1000 | 100% (36/36) | 90–100% | 89% (25/28) | 73–96% |
+
+*Wilson score interval, 95% confidence, independent N−M NOAA points only.*
+
+---
+
+## Appendix G — FEMA NFHL point baseline (Table SZ)
+
+| City | N−M points | Inside FEMA SFHA | Outside FEMA SFHA |
+|------|------------|------------------|-------------------|
+| Raleigh | 37 | 4 (10.8%) | 33 (89.2%) |
+| Houston | 29 | 10 (34.5%) | 19 (65.5%) |
+
+*FEMA NFHL Special Flood Hazard Areas (SFHA_TF = T); supplementary context only — not headline validation.*
 
 ---
 
@@ -638,11 +658,12 @@ See **Comment #14** for method, GEE output, and rebuttal text. Use this table in
 
 - Urban SAR limits: layover, double-bounce; no coherence/PolSAR (**#5** — draft in comment section).
 - NOAA remains the spatial reference (**#1**); not FEMA or aerial imagery for headline metric.
-- FEMA NFHL point baseline (**#4**): most N−M NOAA points outside SFHA.
+- FEMA NFHL point baseline (**#4**, Appendix G).
 - USGS gage not used to filter events (**#8**); single station may not reflect local report locations.
 - 100 m recall limited, especially Houston (**#3**).
-- Recall with Wilson 95% CIs on hit counts (**#17** — `recall_with_ci.json`); no precision/IoU (**#10**).
-- Random-point baseline complete (**#14**): Raleigh and Houston vs N−M NOAA in comment section.
+- Recall with Wilson 95% CIs (**#17**, Table SY in Appendix F); no precision/IoU (**#10**).
+- Random-point baseline (**#14**, Table SX in Appendix E).
+- FEMA NFHL point baseline (**#4**, Table SZ in Appendix G).
 - S1 window and temporal sampling (**#9**, **#12** — **#12** draft in comment section).
 - Houston non-flood control documented (**#7**, **#11** — draft in comment sections); single control, no FP rate.
 - SAR detects flood **presence, not depth or velocity** (**#13** — **in paper**).
@@ -650,7 +671,7 @@ See **Comment #14** for method, GEE output, and rebuttal text. Use this table in
 
 ---
 
-## Appendix D — Reproducibility
+## Appendix D — Reproducibility (repo maintainers only — paper agent can skip)
 
 ```bash
 python3 code/validation/build_independent_validation.py
@@ -659,10 +680,6 @@ python3 code/validation/compute_recall_ci.py
 python3 code/validation/compute_fema_overlap.py
 ```
 
-GEE: paste `code/gee_mapping/generate_flood_hotspots_gee_upload.js`; set `selectedCity` to `raleigh` or `houston`. Console outputs: **HEADLINE** (N−M NOAA recall), **BASELINE** (random null, **#14**), **FEMA overlap** (**#4**, after NFHL asset upload).
+GEE: `code/gee_mapping/generate_flood_hotspots_gee_upload.js` — for re-running validation, not required for manuscript integration.
 
-**Random baseline (#14):** 500 points, seed 42, same buffers as validation. Refactored scoring uses dilated ever-flooded map + `sampleRegions` (see Comment #14).
-
-Config: [`validation_split.json`](../data/processed/validation_split.json)
-
-Related docs: [`validation_independence.md`](validation_independence.md), [`event_selection_methodology.md`](event_selection_methodology.md)
+Related docs: `validation_independence.md`, `event_selection_methodology.md`

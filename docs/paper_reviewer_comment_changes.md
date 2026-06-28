@@ -582,8 +582,20 @@ We report **buffered detection recall** at fixed tolerances (100–1000 m), not 
 
 | City | N | N−M (test) | SAR in GEE map |
 |------|---|------------|----------------|
-| Raleigh | 49 | 37 | 5 composites |
+| Raleigh | 49 | 37 | **5 composites** (GEE: 5 valid flood masks) |
 | Houston | 55 | 29 | 10 composites (+ 1 control) |
+
+**Raleigh map composites (authoritative — GEE `maskList.length = 5`):**
+
+| GEE composite ID | CSV composite_id (if different) | Event date |
+|------------------|-----------------------------------|------------|
+| `755610` | same | 2018-05-21 |
+| `775029_and_1_more` | `775032_and_4_more` (same S1 pair) | 2018-07-07 |
+| `1029187` | same | 2022-05-23 |
+| `1173317` | same | 2024-05-25 |
+| `1208432` | `1208861_and_1_more` (same S1 pair) | 2024-08-04 |
+
+Do **not** change manuscript §3.1 to 3 — an earlier CSV bug flagged only 3 rows as `in_gee_hotspot_map=yes` because imagery-match `composite_id` labels differed from GEE ids for two July/August composites. Validation recall was computed against the **5-composite** ever-flooded map.
 
 **`study_role` values (Table S1 column):** `independent_validation`, `map_sar`, `map_sar_threshold_train`, `sar_matched_not_in_gee_map`, `excluded_no_coordinates`, `control_sar_no_flood` (Houston only).
 

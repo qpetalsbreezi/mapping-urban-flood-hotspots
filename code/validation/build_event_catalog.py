@@ -60,6 +60,20 @@ GEE_NOAA_TO_COMPOSITE: dict[str, dict[str, str]] = {
     },
 }
 
+# imagery-match CSV composite_id -> GEE composite_id (same S1 pair; different event_id label)
+CSV_TO_GEE_COMPOSITE_ID: dict[str, dict[str, str]] = {
+    "raleigh": {
+        "775032_and_4_more": "775029_and_1_more",
+        "1208861_and_1_more": "1208432",
+    },
+    "houston": {},
+}
+
+
+def resolve_gee_composite_id(city: str, csv_composite_id: str) -> str:
+    return CSV_TO_GEE_COMPOSITE_ID.get(city, {}).get(csv_composite_id, csv_composite_id)
+
+
 GEE_SAR = {
     "raleigh": {
         "train": ["755610", "775029_and_1_more"],
@@ -315,16 +329,18 @@ def main() -> int:
         for comp in load_sar_composites(city):
             cfg = GEE_SAR[city]
             cid = comp["composite_id"]
-            if cid in cfg.get("map", []):
-                map_role = "map_sar_threshold_train" if cid in cfg["train"] else "map_sar"
+            gee_cid = resolve_gee_composite_id(city, cid)
+            if gee_cid in cfg.get("map", []):
+                map_role = "map_sar_threshold_train" if gee_cid in cfg["train"] else "map_sar"
             else:
                 map_role = "sar_composite_not_in_gee_map"
             sar_rows.append(
                 {
                     **comp,
+                    "gee_composite_id": gee_cid,
                     "study_role": map_role,
-                    "in_gee_hotspot_map": "yes" if cid in cfg.get("map", []) else "no",
-                    "threshold_train": "yes" if cid in cfg.get("train", []) else "no",
+                    "in_gee_hotspot_map": "yes" if gee_cid in cfg.get("map", []) else "no",
+                    "threshold_train": "yes" if gee_cid in cfg.get("train", []) else "no",
                 }
             )
 
